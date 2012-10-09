@@ -39,20 +39,20 @@ object Untyped extends StandardTokenParsers {
   def genTerm: Parser[Term] = { v | abs | pTerm }
   def term: Parser[Term] = {
     rep1(genTerm) ^^ { case list => (list.head /: list.tail)(App(_, _)) } |
-    failure("illegal start of term")
+      failure("illegal start of term")
   }
 
   /* JH's original version */
-//  def v: Parser[Var] = ident ^^ { case e => Var(e) }
-//  def abs: Parser[Abs] = ("\\" ~> v) ~ ("." ~> term) ^^ { case x ~ t => Abs(x, t) }
-//  def absOrVar: Parser[Term] = v | abs
-//  def appl: Parser[List[Term]] = rep(absOrVar)
-//  def term: Parser[Term] = {
-//    ("(" ~> term) ~ (")" ~> appl) ^^ { case t ~ list => (t /: list)(App(_, _)) } |
-//      v ~ appl ^^ { case v ~ list => (v /: list) (App(_, _)) } |
-//      abs ~ appl ^^ { case v ~ list => (v /: list)(App(_, _)) } |
-//      failure("illegal start of term")
-//  }
+  //  def v: Parser[Var] = ident ^^ { case e => Var(e) }
+  //  def abs: Parser[Abs] = ("\\" ~> v) ~ ("." ~> term) ^^ { case x ~ t => Abs(x, t) }
+  //  def absOrVar: Parser[Term] = v | abs
+  //  def appl: Parser[List[Term]] = rep(absOrVar)
+  //  def term: Parser[Term] = {
+  //    ("(" ~> term) ~ (")" ~> appl) ^^ { case t ~ list => (t /: list)(App(_, _)) } |
+  //      v ~ appl ^^ { case v ~ list => (v /: list) (App(_, _)) } |
+  //      abs ~ appl ^^ { case v ~ list => (v /: list)(App(_, _)) } |
+  //      failure("illegal start of term")
+  //  }
 
   /** Term 't' does not match any reduction rule. */
   case class NoRuleApplies(t: Term) extends Exception(t.toString)
@@ -121,6 +121,8 @@ object Untyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+//    val input = " \\y. ((\\x.x) y)"
+//    val input = "(\\t. \\f. f) v w"
     val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
@@ -128,14 +130,16 @@ object Untyped extends StandardTokenParsers {
         println("input: " + input)
         println("tree: " + trees)
         println("normal order: ")
-        
+
         for (t <- path(trees, reduceNormalOrder))
           println(t)
-//          println("call-by-value: ")
-//          for (t <- path(trees, reduceCallByValue))
-//        	  println(t)
+      //          println("call-by-value: ")
+      //          for (t <- path(trees, reduceCallByValue))
+      //        	  println(t)
       case e =>
         println(e)
     }
+
+    //((\f.v) ((v (\t.(\f.f))) (\t.(\f.t))))
   }
 }

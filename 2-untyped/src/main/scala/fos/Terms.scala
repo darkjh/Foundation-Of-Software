@@ -11,14 +11,13 @@ case class Var(x: String) extends Term {
 }
 
 case class Abs(x: Var, t: Term) extends Term {
-  override def toString = "\\" + x + "." + t
+  override def toString = "(" + "\\" + x + "." + t + ")" 
 }
 
 case class App(left: Term, right: Term) extends Term {
-  override def toString = (left, right) match {
-    case (x: Var, y: Var) => left + " " + right
-    case (x: Var, y: Term) => left + " " + "(" + right + ")"
-    case (x: Term, y: Var) => "(" + left + ")" + " " + right
-    case (x: Term, y: Term) => "(" + left + ")" + " " + "(" + right + ")"
+  override def toString = //"(" + left + " " + right + ")"
+    (left, right) match {
+    case (x: Term, y: App) => left + " " + "(" + right + ")"
+    case (x: Term, y: Term) => left + " " + right
   }
 }
