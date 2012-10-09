@@ -32,15 +32,17 @@ object Untyped extends StandardTokenParsers {
   //       
   //  appl := term (term)+ 		* 2 or more terms
 
-    def v: Parser[Var] = ident ^^ { case e => Var(e) }
-    def abs: Parser[Abs] = ("\\" ~> v) ~ ("." ~> term) ^^ { case x ~ t => Abs(x, t) }
-    def pTerm: Parser[Term] = "(" ~> term <~ ")"
-    def genTerm: Parser[Term] = { v | abs | pTerm }
-    def term: Parser[Term] = {
-      rep1(genTerm) ^^ { case list => (list.head /: list.tail)(App(_, _)) } |
-        failure("illegal start of term")
-    }
+  /* RH's re-organized version */
+  def v: Parser[Var] = ident ^^ { case e => Var(e) }
+  def abs: Parser[Abs] = ("\\" ~> v) ~ ("." ~> term) ^^ { case x ~ t => Abs(x, t) }
+  def pTerm: Parser[Term] = "(" ~> term <~ ")"
+  def genTerm: Parser[Term] = { v | abs | pTerm }
+  def term: Parser[Term] = {
+    rep1(genTerm) ^^ { case list => (list.head /: list.tail)(App(_, _)) } |
+    failure("illegal start of term")
+  }
 
+  /* JH's original version */
 //  def v: Parser[Var] = ident ^^ { case e => Var(e) }
 //  def abs: Parser[Abs] = ("\\" ~> v) ~ ("." ~> term) ^^ { case x ~ t => Abs(x, t) }
 //  def absOrVar: Parser[Term] = v | abs
@@ -51,8 +53,6 @@ object Untyped extends StandardTokenParsers {
 //      abs ~ appl ^^ { case v ~ list => (v /: list)(App(_, _)) } |
 //      failure("illegal start of term")
 //  }
-
-  //   ... To complete ... 
 
   /** Term 't' does not match any reduction rule. */
   case class NoRuleApplies(t: Term) extends Exception(t.toString)
@@ -121,8 +121,6 @@ object Untyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    //    val input = "(a)"
-    //    val input = ""
     val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
@@ -133,9 +131,9 @@ object Untyped extends StandardTokenParsers {
         
         for (t <- path(trees, reduceNormalOrder))
           println(t)
-      //              println("call-by-value: ")
-      //              for (t <- path(trees, reduceCallByValue))
-      //                println(t)
+//          println("call-by-value: ")
+//          for (t <- path(trees, reduceCallByValue))
+//        	  println(t)
       case e =>
         println(e)
     }
