@@ -15,5 +15,5 @@ case class Abs(x: Var, t: Term) extends Term {
 }
 
 case class App(left: Term, right: Term) extends Term{
-  override def toString = "(" + left + ")" + "(" + right + ")"
+  override def toString = "(" + left + ")" + " " + "(" + right + ")"
 }
