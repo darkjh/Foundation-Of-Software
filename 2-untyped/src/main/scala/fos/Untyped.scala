@@ -98,10 +98,18 @@ object Untyped extends StandardTokenParsers {
     case App(t1, t2) => FV(t1) ::: FV(t2)
   }
 
+  def isval(t: Term): Boolean = t match {
+    case t: Abs => true
+    case t: Var => false
+    case t => isval(reduceCallByValue(t))
+  }
+
   /** Call by value reducer. */
-  //  def reduceCallByValue(t: Term): Term = t match {
-  //  //   ... To complete ... 
-  //  }
+  def reduceCallByValue(t: Term): Term = t match {
+    case App(Abs(x, t1), t2) if isval(t2) => subst(t1, x.v, t2)
+    case App(t1, t2) if isval(t1) => App(reduceCallByValue(t1), t2)
+    case _ => throw NoRuleApplies(t)
+  }
 
   /**
    * Returns a stream of terms, each being one step of reduction.
@@ -121,25 +129,27 @@ object Untyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val input = " \\y. ((\\x.x) y)"
-//    val input = "(\\t. \\f. f) v w"
+    //    val input = " \\y. ((\\x.x) y)"
+    //    val input = "(\\t. \\f. f) v w"
     val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
+    //    val input = "(\\x. x) ( (\\x. x) \\z. (\\x. x) z)"
+    //    val input = "x"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         println("input: " + input)
         println("tree: " + trees)
-        println("normal order: ")
 
-        for (t <- path(trees, reduceNormalOrder))
+        //        println("normal order: ")
+        //        for (t <- path(trees, reduceNormalOrder))
+        //          println(t)
+
+        println("call-by-value: ")
+        for (t <- path(trees, reduceCallByValue))
           println(t)
-      //          println("call-by-value: ")
-      //          for (t <- path(trees, reduceCallByValue))
-      //        	  println(t)
+
       case e =>
         println(e)
     }
-
-    //((\f.v) ((v (\t.(\f.f))) (\t.(\f.t))))
   }
 }
