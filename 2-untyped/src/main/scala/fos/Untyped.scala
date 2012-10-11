@@ -73,9 +73,11 @@ object Untyped extends StandardTokenParsers {
   def alpha(t: Term): Term = {
     def alpha0(t: Term, y: String): Term = t match {
       case App(a, b) => App(alpha0(a, y), alpha0(b, y))
-      case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
+      //case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
+      case Abs(x, t1) if x.v != y => Abs(x, alpha0(t1, y))
       case Var(x) if x == y => Var(x + "'")
       case Var(x) if x != y => Var(x)
+      case t => t
     }
 
     t match {
@@ -93,7 +95,7 @@ object Untyped extends StandardTokenParsers {
   }
 
   def FV(t: Term): List[Var] = t match {
-    case a @ Var(x) => List(a)
+    case a: Var => List(a)
     case Abs(Var(x), t1) => FV(t1).filter(_ != Var(x))
     case App(t1, t2) => FV(t1) ::: FV(t2)
   }
@@ -128,17 +130,18 @@ object Untyped extends StandardTokenParsers {
     }
 
   def main(args: Array[String]): Unit = {
-    // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-        val input = " \\y. ((\\x.x) y)"
+    //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+    //    val input = " \\y. ((\\x.x) y)"
+    //    val input = " \\y. \\y. y y"
     //    val input = "(\\t. \\f. f) v w"
-//    val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
+    val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
     //    val input = "(\\x. x) ( (\\x. x) \\z. (\\x. x) z)"
     //    val input = "x"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         println("input: " + input)
-        //        println("tree: " + trees)
+        println("tree: " + trees)
         println("normal order: ")
         for (t <- path(trees, reduceNormalOrder))
           println(t)
