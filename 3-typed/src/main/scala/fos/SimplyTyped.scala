@@ -49,7 +49,7 @@ object SimplyTyped extends StandardTokenParsers {
     "(" ~> tp <~ ")" 
   )
   def tp: Parser[Type] = positioned(
-    simpleTp ~ rep("->" ~> simpleTp) ^^ { case tp ~ list => (list :\ tp)(TypeFun(_, _)) } |
+    simpleTp ~ rep("->" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypeFun(_, _)) } |
     failure("illegal start of type")
   )
 
