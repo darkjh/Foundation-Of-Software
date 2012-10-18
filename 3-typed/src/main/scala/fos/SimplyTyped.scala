@@ -4,22 +4,25 @@ import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.input._
 import scala.util.parsing.syntax._
 
-/** This object implements a parser and evaluator for the
+/**
+ * This object implements a parser and evaluator for the
  *  simply typed lambda calculus found in Chapter 9 of
  *  the TAPL book.
  */
 object SimplyTyped extends StandardTokenParsers {
   lexical.delimiters ++= List("(", ")", "\\", ".", ":", "=", "->", "{", "}", ",", "*")
-  lexical.reserved   ++= List("Bool", "Nat", "true", "false", "if", "then", "else", "succ",
-                              "pred", "iszero", "let", "in", "fst", "snd")
+  lexical.reserved ++= List("Bool", "Nat", "true", "false", "if", "then", "else", "succ",
+    "pred", "iszero", "let", "in", "fst", "snd")
 
-  /** Term     ::= SimpleTerm { SimpleTerm }
+  /**
+   * Term     ::= SimpleTerm { SimpleTerm }
    */
   def term: Parser[Term] = positioned(
-  //   ... To complete ... 
+    //   ... To complete ... 
     failure("illegal start of term"))
 
-  /** SimpleTerm ::= "true"
+  /**
+   * SimpleTerm ::= "true"
    *               | "false"
    *               | number
    *               | "succ" Term
@@ -35,23 +38,21 @@ object SimplyTyped extends StandardTokenParsers {
    *               | "snd" Term
    */
   def simpleTerm: Parser[Term] = positioned(
-      "true"          ^^^ True
-    | "false"         ^^^ False
-  //   ... To complete ... 
-    | failure("illegal start of simple term"))
+    "true" ^^^ True |
+    "false" ^^^ False |
+    failure("illegal start of simple term"))
 
-  /** Type       ::= SimpleType [ "->" Type ]
+  /**
+   * Type       ::= SimpleType [ "->" Type ]
    */
-    
+
   def simpleTp: Parser[Type] = positioned(
     "Bool" ^^^ TypeBool |
     "Nat" ^^^ TypeNat |
-    "(" ~> tp <~ ")" 
-  )
+    "(" ~> tp <~ ")")
   def tp: Parser[Type] = positioned(
-    simpleTp ~ rep("->" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypeFun(_, _)) } |
-    failure("illegal start of type")
-  )
+    rep(simpleTp <~ "->") ~ simpleTp ^^ { case list ~ tp => (list :\ tp)(TypeFun(_, _)) } |
+    failure("illegal start of type"))
 
   //   ... To complete ... 
 
@@ -60,7 +61,7 @@ object SimplyTyped extends StandardTokenParsers {
 
   /** Print an error message, together with the position where it occured. */
   case class TypeError(pos: Position, msg: String) extends Exception(msg) {
-    override def toString = 
+    override def toString =
       msg + "\n" + pos.longString
   }
 
@@ -69,24 +70,25 @@ object SimplyTyped extends StandardTokenParsers {
 
   /** Is the given term a numeric value? */
   def isNumericVal(t: Term): Boolean = t match {
-  //   ... To complete ... 
+    //   ... To complete ... 
     case _ => false
   }
 
   /** Is the given term a value? */
   def isValue(t: Term): Boolean = t match {
-  //   ... To complete ... 
+    //   ... To complete ... 
     case _ => false
   }
 
   /** Call by value reducer. */
   def reduce(t: Term): Term = t match {
-  //   ... To complete ... 
+    //   ... To complete ... 
     case _ =>
       throw NoRuleApplies(t)
   }
 
-  /** Returns the type of the given term <code>t</code>.
+  /**
+   * Returns the type of the given term <code>t</code>.
    *
    *  @param ctx the initial context
    *  @param t   the given term
@@ -95,10 +97,11 @@ object SimplyTyped extends StandardTokenParsers {
   def typeof(ctx: Context, t: Term): Type = t match {
     case True | False =>
       TypeBool
-  //   ... To complete ... 
+    //   ... To complete ... 
   }
 
-  /** Returns a stream of terms, each being one step of reduction.
+  /**
+   * Returns a stream of terms, each being one step of reduction.
    *
    *  @param t      the initial term
    *  @param reduce the evaluation strategy used for reduction.
@@ -115,17 +118,17 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "Bool -> Nat -> Bool -> Nat"
+    val input = "Bool -> Nat"
     val tokens = new lexical.Scanner(input)
     phrase(tp)(tokens) match {
-//      case Success(trees, _) =>
-//        try {
-//          println("typed: " + typeof(Nil, trees))
-//          for (t <- path(trees, reduce))
-//            println(t)
-//        } catch {
-//          case tperror => println(tperror.toString)
-//        }
+      //      case Success(trees, _) =>
+      //        try {
+      //          println("typed: " + typeof(Nil, trees))
+      //          for (t <- path(trees, reduce))
+      //            println(t)
+      //        } catch {
+      //          case tperror => println(tperror.toString)
+      //        }
       case e =>
         println(e)
     }
