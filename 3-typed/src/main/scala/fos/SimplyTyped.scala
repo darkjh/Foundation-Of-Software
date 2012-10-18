@@ -18,7 +18,7 @@ object SimplyTyped extends StandardTokenParsers {
    * Term     ::= SimpleTerm { SimpleTerm }
    */
   def term: Parser[Term] = positioned(
-    //   ... To complete ... 
+    rep1(simpleTerm) ^^ { case list => (list.head /: list.tail)(App(_, _)) } |
     failure("illegal start of term"))
 
   /**
@@ -38,10 +38,31 @@ object SimplyTyped extends StandardTokenParsers {
    *               | "snd" Term
    */
   def simpleTerm: Parser[Term] = positioned(
-    "true" ^^^ True |
-    "false" ^^^ False |
+    "(" ~> term <~ ")" |
+    ident ^^ { case e => Var(e) } |
+    ("\\" ~> ident) ~ (":" ~> tp) ~ ("." ~> term) ^^ { case id ~ tp ~ t => Abs(Var(id), tp, t) } | 
+    value |
+    "succ" ~> term ^^ { case e => Succ(e) } |
+    "pred" ~> term ^^ { case e => Pred(e) } |
+    "iszero" ~> term ^^ { case e => IsZero(e) } |
+    ("if" ~> term) ~ ("then" ~> term) ~ ("else" ~> term) ^^ { case cond ~ t1 ~ t2 => If(cond, t1, t2) } |
     failure("illegal start of simple term"))
 
+  def value: Parser[Term] = {
+    "true" ^^^ True |
+    "false" ^^^ False |
+    //"0" ^^^ Zero() |
+    numericValue |
+    failure("illegal start of expression")
+  }
+
+  def numericValue: Parser[Term] = {
+    numericLit ^^ { case e => Numeric(e.toInt) } |
+    "succ" ~> numericValue ^^ { case e => Succ(e) } |
+    failure("illegal start of expression")
+  } 
+    
+    
   /**
    * Type       ::= SimpleType [ "->" Type ]
    */
@@ -118,9 +139,9 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "Bool -> Nat"
+    val input = "if iszero (\\x:Bool.\\y:Nat->Bool->Nat. x (y 0) 5) 5 then true else false"
     val tokens = new lexical.Scanner(input)
-    phrase(tp)(tokens) match {
+    phrase(term)(tokens) match {
       //      case Success(trees, _) =>
       //        try {
       //          println("typed: " + typeof(Nil, trees))
