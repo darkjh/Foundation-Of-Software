@@ -51,7 +51,6 @@ object SimplyTyped extends StandardTokenParsers {
   def value: Parser[Term] = {
     "true" ^^^ True |
     "false" ^^^ False |
-    //"0" ^^^ Zero() |
     numericValue |
     failure("illegal start of expression")
   }
@@ -107,7 +106,13 @@ object SimplyTyped extends StandardTokenParsers {
     case _ =>
       throw NoRuleApplies(t)
   }
-
+  
+  def getType(ctx: Context, v: String): Type = {
+	if (ctx.isEmpty) null
+    else if (ctx.head._1 == v) ctx.head._2
+    else getType(ctx.tail, v)
+  }
+  
   /**
    * Returns the type of the given term <code>t</code>.
    *
@@ -116,9 +121,20 @@ object SimplyTyped extends StandardTokenParsers {
    *  @return    the computed type
    */
   def typeof(ctx: Context, t: Term): Type = t match {
-    case True | False =>
-      TypeBool
-    //   ... To complete ... 
+    case n: Numeric => TypeNat // TODO
+    case True | False => TypeBool
+    case Zero => TypeNat
+    case Pred(e) if typeof(ctx, e) == TypeNat => TypeNat
+    case Succ(e) if typeof(ctx, e) == TypeNat => TypeNat
+    case IsZero(e) if typeof(ctx, e) == TypeNat => TypeBool
+    case If(cond, t, e) if typeof(ctx, cond) == TypeBool && typeof(ctx, t) == typeof(ctx,e) => typeof(ctx, t)
+    case x: Var if ctx.contains((x.v, tp)) => getType(ctx, x.v)
+    case Abs(x, tp, t) if typeof((x.v, tp) :: ctx , t).isInstanceOf[Type] => TypeFun(tp, typeof((x.v, tp) :: ctx , t))
+    case App(l, r) if typeof(ctx, l).isInstanceOf[TypeFun] && typeof(ctx, r).isInstanceOf[Type] =>
+      typeof(ctx, l) match {
+        case TypeFun(t11, t12) if (t11 == typeof(ctx, r)) => t12
+      }
+    case _ => throw TypeError(t.pos, "type error")
   }
 
   /**
@@ -139,17 +155,19 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "if iszero (\\x:Bool.\\y:Nat->Bool->Nat. x (y 0) 5) 5 then true else false"
+//    val input = "if iszero (\\x:Bool.\\y:Nat->Bool->Nat. x (y 0) 5) 5 then true else false"
+    val input = "\\x: Bool. if x then 1 else 2"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
-      //      case Success(trees, _) =>
-      //        try {
-      //          println("typed: " + typeof(Nil, trees))
-      //          for (t <- path(trees, reduce))
-      //            println(t)
-      //        } catch {
-      //          case tperror => println(tperror.toString)
-      //        }
+      case Success(trees, _) =>
+        try {
+          println("parsed: " + trees)
+          println("typed: " + typeof(Nil, trees))
+//          for (t <- path(trees, reduce))
+//            println(t)
+        } catch {
+          case tperror => println(tperror.toString)
+        }
       case e =>
         println(e)
     }
