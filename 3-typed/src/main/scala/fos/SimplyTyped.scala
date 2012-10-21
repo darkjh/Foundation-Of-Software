@@ -198,6 +198,7 @@ object SimplyTyped extends StandardTokenParsers {
    *  @return    the computed type
    */
   def typeof(ctx: Context0, t: Term): Type = t match {
+//    def typeof(ctx: Context, t: Term): Type = t match {
     // case n: Numeric => TypeNat // TODO nums should be de-sugered when parsing
     case True | False => TypeBool
     case Zero => TypeNat
@@ -206,6 +207,7 @@ object SimplyTyped extends StandardTokenParsers {
     case IsZero(e) if typeof(ctx, e) == TypeNat => TypeBool
     case If(cond, t, e) if typeof(ctx, cond) == TypeBool && typeof(ctx, t) == typeof(ctx,e) => typeof(ctx, t)
     case x: Var if ctx.contains(x.v) => ctx.get(x.v).get
+//    case x: Var  if ctx.exists((pair:(String, Type))=> pair._1.equals(x.v))=> getType(ctx, x.v)
     case Abs(x, tp, t) if typeof(ctx.+((x.v, tp)) , t).isInstanceOf[Type] => TypeFun(tp, typeof(ctx.+((x.v, tp)), t))
     case App(l, r) if typeof(ctx, l).isInstanceOf[TypeFun] && typeof(ctx, r).isInstanceOf[Type] =>
       typeof(ctx, l) match {
@@ -232,7 +234,7 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "if iszero ((\\x: Bool. if true then 0 else 1) true) then true else false"
+    val input = "if iszero (\\x: Bool. if true then 0 else 1) then true else false"
 //    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
@@ -240,6 +242,7 @@ object SimplyTyped extends StandardTokenParsers {
         try {
           println("parsed: " + trees)
           println("typed: " + typeof(new HashMap[String, Type](), trees))
+//          println("typed: " + typeof(Nil, trees))
           for (t <- path(trees, reduce))
             println(t)
         } catch {
