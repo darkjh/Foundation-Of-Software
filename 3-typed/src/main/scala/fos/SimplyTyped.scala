@@ -3,6 +3,7 @@ package fos
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.input._
 import scala.util.parsing.syntax._
+import scala.collection.immutable.HashMap
 
 /**
  * This object implements a parser and evaluator for the
@@ -54,12 +55,17 @@ object SimplyTyped extends StandardTokenParsers {
     numericValue |
     failure("illegal start of expression")
   }
+  
+  def numericDesuger(n: Int): Term = {
+    if (n == 0) Zero
+    else Succ(numericDesuger(n - 1))
+  }
 
   def numericValue: Parser[Term] = {
-    numericLit ^^ { case e => Numeric(e.toInt) } |
+    numericLit ^^ { case e => numericDesuger(e.toInt) } |
     "succ" ~> numericValue ^^ { case e => Succ(e) } |
     failure("illegal start of expression")
-  } 
+  }
     
     
   /**
@@ -87,30 +93,87 @@ object SimplyTyped extends StandardTokenParsers {
 
   /** The context is a list of variable names paired with their type. */
   type Context = List[(String, Type)]
+  type Context0 = HashMap[String, Type]
 
   /** Is the given term a numeric value? */
   def isNumericVal(t: Term): Boolean = t match {
-    //   ... To complete ... 
+    case Succ(t) => true
+    case Pred(t) => true
+    // case t: Numeric => true
     case _ => false
   }
 
   /** Is the given term a value? */
   def isValue(t: Term): Boolean = t match {
-    //   ... To complete ... 
+    case t: Abs => true
+    case t: Var => false
     case _ => false
+  }
+  
+  /** Alpha conversion */
+  def alpha(t: Term): Term = {
+    def alpha0(t: Term, y: String): Term = t match {
+      case App(a, b) => App(alpha0(a, y), alpha0(b, y))
+      //case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
+      case Abs(x, tp, t1) if x.v != y => Abs(x, tp, alpha0(t1, y))
+      case Var(x) if x == y => Var(x + "'")
+      case Var(x) if x != y => Var(x)
+      case t => t
+    }
+
+    t match {
+      case Abs(Var(y), tp, t) => Abs(Var(y + "'"), tp, alpha0(t, y))
+    }
+  }
+  
+  /** Substitution */
+  def subst(t: Term, x: String, s: Term): Term = t match {
+    case Var(y) if (y == x) => s
+    case Var(y) if (y != x) => t
+    case Abs(Var(y), _, t1) if (y == x) => t
+    case Abs(Var(y), tp, t1) if (y != x && !FV(s).exists(_.v == y)) => Abs(Var(y), tp, subst(t1, x, s))
+    case Abs(Var(y), _, t1) if (y != x && FV(s).exists(_.v == y)) => subst(alpha(t), x, s)
+    case App(t1, t2) => App(subst(t1, x, s), subst(t2, x, s))
+  }
+  
+  /** Free variables in a term */
+  def FV(t: Term): List[Var] = t match {
+    case a: Var => List(a)
+    case Abs(Var(x), _, t1) => FV(t1).filter(_ != Var(x))
+    case App(t1, t2) => FV(t1) ::: FV(t2)
   }
 
   /** Call by value reducer. */
   def reduce(t: Term): Term = t match {
-    //   ... To complete ... 
-    case _ =>
-      throw NoRuleApplies(t)
+    // arithmetic
+    // TODO simplify rules, no check needed
+    case If(True, t2, t3) => t2
+    case If(False, t2, t3) => t3
+    case If(t1, t2, t3) => val v = reduce(t1); If(v, t2, t3)
+    case IsZero(Zero) => True
+    case IsZero(Succ(tm)) if (isNumericVal(tm) == true) => False
+    case Pred(Zero) => Zero
+    case Pred(Succ(tm)) if (isNumericVal(tm) == true) => tm
+    case IsZero(tm) => val v = reduce(tm); IsZero(v)
+    case Pred(tm) => val v = reduce(tm); Pred(v)
+    case Succ(tm) => val v = reduce(tm); Succ(v)
+    
+    // lambda
+    case App(Abs(x,_, t1), t2) if isValue(t2) => subst(t1, x.v, t2)
+    case App(t1, t2) if isValue(t1) => App(reduce(t1), t2)
+    case _ => throw NoRuleApplies(t)
   }
   
+  /** Get the type for a variable from the context */
   def getType(ctx: Context, v: String): Type = {
 	if (ctx.isEmpty) null
     else if (ctx.head._1 == v) ctx.head._2
     else getType(ctx.tail, v)
+  }
+  
+  def addVar(ctx: Context0, x: Var, t: Type): Context0 = {
+    if (!ctx.contains(x.v)) ctx.+((x.v, t))
+    else ctx.+((x.v + "'", t))
   }
   
   /**
@@ -120,16 +183,16 @@ object SimplyTyped extends StandardTokenParsers {
    *  @param t   the given term
    *  @return    the computed type
    */
-  def typeof(ctx: Context, t: Term): Type = t match {
-    case n: Numeric => TypeNat // TODO
+  def typeof(ctx: Context0, t: Term): Type = t match {
+    // case n: Numeric => TypeNat // TODO nums should be de-sugered when parsing
     case True | False => TypeBool
     case Zero => TypeNat
     case Pred(e) if typeof(ctx, e) == TypeNat => TypeNat
     case Succ(e) if typeof(ctx, e) == TypeNat => TypeNat
     case IsZero(e) if typeof(ctx, e) == TypeNat => TypeBool
     case If(cond, t, e) if typeof(ctx, cond) == TypeBool && typeof(ctx, t) == typeof(ctx,e) => typeof(ctx, t)
-    case x: Var if ctx.contains((x.v, tp)) => getType(ctx, x.v)
-    case Abs(x, tp, t) if typeof((x.v, tp) :: ctx , t).isInstanceOf[Type] => TypeFun(tp, typeof((x.v, tp) :: ctx , t))
+    case x: Var if ctx.contains(x.v) => ctx.get(x.v).get
+    case Abs(x, tp, t) if typeof(ctx.+((x.v, tp)) , t).isInstanceOf[Type] => TypeFun(tp, typeof(ctx.+((x.v, tp)), t))
     case App(l, r) if typeof(ctx, l).isInstanceOf[TypeFun] && typeof(ctx, r).isInstanceOf[Type] =>
       typeof(ctx, l) match {
         case TypeFun(t11, t12) if (t11 == typeof(ctx, r)) => t12
@@ -155,16 +218,16 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val input = "if iszero (\\x:Bool.\\y:Nat->Bool->Nat. x (y 0) 5) 5 then true else false"
-    val input = "\\x: Bool. if x then 1 else 2"
+    val input = "if iszero 2 then true else false"
+//    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
           println("parsed: " + trees)
-          println("typed: " + typeof(Nil, trees))
-//          for (t <- path(trees, reduce))
-//            println(t)
+          println("typed: " + typeof(new HashMap[String, Type](), trees))
+          for (t <- path(trees, reduce))
+            println(t)
         } catch {
           case tperror => println(tperror.toString)
         }
