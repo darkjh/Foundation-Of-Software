@@ -113,6 +113,14 @@ object SimplyTyped extends StandardTokenParsers {
     else getType(ctx.tail, v)
   }
   
+  /** Add a variable with its type into context, rename if necessary */
+//  def addVar(ctx: Context0, x: Var, t: Type): Context0 = {
+//    if (!ctx.contains(x.v)) ctx.+((x.v, t))
+//    else ctx.+((x.v + "'", t))
+//  }
+  
+  //case x: Var  if ctx.exists((pair:(String, Type))=> pair._1.equals(x.v))=> getType(ctx, x.v)
+  
   /**
    * Returns the type of the given term <code>t</code>.
    *
@@ -155,8 +163,9 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val input = "if iszero (\\x:Bool.\\y:Nat->Bool->Nat. x (y 0) 5) 5 then true else false"
-    val input = "\\x: Bool. if x then if else "
+
+//    val input = "if iszero 2 then true else false"
+    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
