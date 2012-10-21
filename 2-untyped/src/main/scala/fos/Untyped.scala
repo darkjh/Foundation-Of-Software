@@ -133,9 +133,9 @@ object Untyped extends StandardTokenParsers {
   def main(args: Array[String]): Unit = {
     //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
     //    val input = " \\y. ((\\x.x) y)"
-    //    val input = " \\y. \\y. y y"
-    //    val input = "(\\t. \\f. f) v w"
-    val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
+        val input = "(\\x. \\y. x y) (a b)"
+//        val input = "(\\t. \\f. f) v w"
+//    val input = "(\\b. \\c. b c (c (\\t. \\f. f) (\\t. \\f. t))) (\\t. \\f. t) v"
     //    val input = "(\\x. x) ( (\\x. x) \\z. (\\x. x) z)"
     //    val input = "x"
     val tokens = new lexical.Scanner(input)

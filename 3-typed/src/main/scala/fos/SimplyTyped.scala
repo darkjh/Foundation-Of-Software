@@ -105,7 +105,14 @@ object SimplyTyped extends StandardTokenParsers {
   /** Is the given term a value? */
   def isValue(t: Term): Boolean = t match {
     case t: Abs => true
-    case t: Var => false
+    case t: Succ => true
+    case t: Pred => true
+    case t: IsZero => true
+    case True => true
+    case False => true
+    case Zero => true
+    // case t: Var => false
+    // case t => isValue(reduce(t))
     case _ => false
   }
   
@@ -127,12 +134,19 @@ object SimplyTyped extends StandardTokenParsers {
   
   /** Substitution */
   def subst(t: Term, x: String, s: Term): Term = t match {
+    case IsZero(t) => IsZero(subst(t, x, s))
+    case Succ(t) => Succ(subst(t, x, s))
+    case Pred(t) => Pred(subst(t, x, s))
+    case If(cond, t, e) => If(subst(cond, x, s), subst(t, x, s), subst(e, x, s))
+    
     case Var(y) if (y == x) => s
     case Var(y) if (y != x) => t
     case Abs(Var(y), _, t1) if (y == x) => t
     case Abs(Var(y), tp, t1) if (y != x && !FV(s).exists(_.v == y)) => Abs(Var(y), tp, subst(t1, x, s))
     case Abs(Var(y), _, t1) if (y != x && FV(s).exists(_.v == y)) => subst(alpha(t), x, s)
     case App(t1, t2) => App(subst(t1, x, s), subst(t2, x, s))
+    
+    case e => e
   }
   
   /** Free variables in a term */
@@ -148,14 +162,14 @@ object SimplyTyped extends StandardTokenParsers {
     // TODO simplify rules, no check needed
     case If(True, t2, t3) => t2
     case If(False, t2, t3) => t3
-    case If(t1, t2, t3) => val v = reduce(t1); If(v, t2, t3)
+    case If(t1, t2, t3) => If(reduce(t1), t2, t3)
     case IsZero(Zero) => True
     case IsZero(Succ(tm)) if (isNumericVal(tm) == true) => False
     case Pred(Zero) => Zero
     case Pred(Succ(tm)) if (isNumericVal(tm) == true) => tm
-    case IsZero(tm) => val v = reduce(tm); IsZero(v)
-    case Pred(tm) => val v = reduce(tm); Pred(v)
-    case Succ(tm) => val v = reduce(tm); Succ(v)
+    case IsZero(tm) => IsZero(reduce(tm))
+    case Pred(tm) => Pred(reduce(tm))
+    case Succ(tm) => Succ(reduce(tm))
     
     // lambda
     case App(Abs(x,_, t1), t2) if isValue(t2) => subst(t1, x.v, t2)
@@ -218,8 +232,8 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val input = "if iszero 2 then true else false"
-    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
+    val input = "if iszero ((\\x: Bool. if true then 0 else 1) true) then true else false"
+//    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
