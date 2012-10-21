@@ -109,6 +109,7 @@ object Untyped extends StandardTokenParsers {
   /** Call by value reducer. */
   def reduceCallByValue(t: Term): Term = t match {
     case App(Abs(x, t1), t2) if isval(t2) => subst(t1, x.v, t2)
+    // case App(t1, t2) if isval(t1) => App(reduceCallByValue(t1), t2)
     case App(t1, t2) if isval(t1) => App(reduceCallByValue(t1), t2)
     case _ => throw NoRuleApplies(t)
   }

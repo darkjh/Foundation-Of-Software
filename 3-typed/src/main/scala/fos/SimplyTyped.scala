@@ -71,7 +71,6 @@ object SimplyTyped extends StandardTokenParsers {
   /**
    * Type       ::= SimpleType [ "->" Type ]
    */
-
   def simpleTp: Parser[Type] = positioned(
     "Bool" ^^^ TypeBool |
     "Nat" ^^^ TypeNat |
