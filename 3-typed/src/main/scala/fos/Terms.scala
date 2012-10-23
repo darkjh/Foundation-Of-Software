@@ -45,6 +45,12 @@ case class App(left: Term, right: Term) extends Term {
   }
 }
 
+case class Pair(fst: Term, snd: Term) extends Term {
+  override def toString = "{" + fst + "," + snd + "}"
+}
+
+case class Fst(p: Term) extends Term
+case class Snd(p: Term) extends Term
 
 /** Abstract Syntax Trees for types. */
 abstract class Type extends Term
@@ -58,5 +64,11 @@ case object TypeNat extends Type {
 }
 
 case class TypeFun(from: Type, to: Type) extends Type {
-  // override def toString() = from + " -> " + to
+//  override def toString() = from + " -> " + to
+}
+
+case class TypePair(fst: Type, snd: Type) extends Type {
+  val f = fst
+  val s = snd
+//  override def toString() = fst + " * " + snd
 }
