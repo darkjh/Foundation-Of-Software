@@ -65,7 +65,8 @@ object Untyped extends StandardTokenParsers {
    */
   def reduceNormalOrder(t: Term): Term = t match {
     case App(Abs(x, t1), t2) => subst(t1, x.v, t2)
-    case App(t1, t2) => App(reduceNormalOrder(t1), t2)
+    case App(t1: App, t2) => App(reduceNormalOrder(t1), t2)
+    case App(t1: Var, t2) => App(t1, reduceNormalOrder(t2))
     case Abs(x, t1) => Abs(x, reduceNormalOrder(t1))
     case _ => throw NoRuleApplies(t)
   }
@@ -131,7 +132,10 @@ object Untyped extends StandardTokenParsers {
     }
 
   def main(args: Array[String]): Unit = {
-    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+//    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+    
+    val input = "a ((\\x. x) b)"
+    val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
 

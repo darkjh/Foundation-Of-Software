@@ -98,27 +98,28 @@ object SimplyTyped extends StandardTokenParsers {
   def isNumericVal(t: Term): Boolean = t match {
     case Succ(t) => true
     case Pred(t) => true
-    // case t: Numeric => true
+    case Zero => true
     case _ => false
   }
 
   /** Is the given term a value? */
-  def isValue(t: Term): Boolean = t match {
-    case t: Abs => true
-    case t: Succ => true
-    case t: Pred => true
-    case t: IsZero => true
-    case True => true
-    case False => true
-    case Zero => true
-    // case t: Var => false
-    // case t => isValue(reduce(t))
-    case _ => false
-  }
+  def isValue(t: Term): Boolean =
+    t match {
+	  case Abs(_,_,_) => true
+	  case True => true
+	  case False => true
+	  case t if isNumericVal(t) => true
+	  case _ => false
+    }
   
   /** Alpha conversion */
   def alpha(t: Term): Term = {
     def alpha0(t: Term, y: String): Term = t match {
+      case Succ(t) => Succ(alpha0(t, y))
+      case Pred(t) => Pred(alpha0(t, y))
+      case IsZero(t) => IsZero(alpha0(t, y))
+      case If(cond, t, e) => If(alpha0(cond, y), alpha0(t, y), alpha0(e, y))
+      
       case App(a, b) => App(alpha0(a, y), alpha0(b, y))
       //case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
       case Abs(x, tp, t1) if x.v != y => Abs(x, tp, alpha0(t1, y))
@@ -151,6 +152,14 @@ object SimplyTyped extends StandardTokenParsers {
   
   /** Free variables in a term */
   def FV(t: Term): List[Var] = t match {
+    case Zero => Nil
+    case True => Nil
+    case False => Nil
+    case If(cond, t, e) => FV(cond) ::: FV(t) ::: FV(e)
+    case Pred(t) => FV(t)
+    case Succ(t) => FV(t)
+    case IsZero(t) => FV(t)
+    
     case a: Var => List(a)
     case Abs(Var(x), _, t1) => FV(t1).filter(_ != Var(x))
     case App(t1, t2) => FV(t1) ::: FV(t2)
@@ -159,31 +168,35 @@ object SimplyTyped extends StandardTokenParsers {
   /** Call by value reducer. */
   def reduce(t: Term): Term = t match {
     // arithmetic
-    // TODO simplify rules, no check needed
     case If(True, t2, t3) => t2
     case If(False, t2, t3) => t3
     case If(t1, t2, t3) => If(reduce(t1), t2, t3)
     case IsZero(Zero) => True
-    case IsZero(Succ(tm)) if (isNumericVal(tm) == true) => False
+    case IsZero(Succ(tm)) => False // if isNumericVal(tm) => False
     case Pred(Zero) => Zero
-    case Pred(Succ(tm)) if (isNumericVal(tm) == true) => tm
+    case Pred(Succ(tm)) => tm // if isNumericVal(tm) => tm
     case IsZero(tm) => IsZero(reduce(tm))
     case Pred(tm) => Pred(reduce(tm))
     case Succ(tm) => Succ(reduce(tm))
     
     // lambda
-    case App(Abs(x,_, t1), t2) if isValue(t2) => subst(t1, x.v, t2)
-    case App(t1, t2) if isValue(t1) => App(reduce(t1), t2)
+//    case App(Abs(x,_, t1), t2) if isValue(t2) => subst(t1, x.v, t2)
+//    case App(t1, t2) if isValue(t1) => App(reduce(t1), t2)
+    case App(Abs(x, _, t1), t2) if isValue(t2) => subst(t1, x.v, t2)
+    case App(t1 , t2) if isValue(t1) => App(t1, reduce(t2))
+    case App(t1, t2) => App(reduce(t1), t2)
+    
     case _ => throw NoRuleApplies(t)
   }
   
-  /** Get the type for a variable from the context */
+  /** Get the type for a variable from the context list */
   def getType(ctx: Context, v: String): Type = {
 	if (ctx.isEmpty) null
     else if (ctx.head._1 == v) ctx.head._2
     else getType(ctx.tail, v)
   }
   
+  // TODO same variable name in the context ex: \\x.\\x. x y
   /** Add a variable with its type into context, rename if necessary */
 //  def addVar(ctx: Context0, x: Var, t: Type): Context0 = {
 //    if (!ctx.contains(x.v)) ctx.+((x.v, t))
@@ -199,7 +212,6 @@ object SimplyTyped extends StandardTokenParsers {
    */
   def typeof(ctx: Context0, t: Term): Type = t match {
 //    def typeof(ctx: Context, t: Term): Type = t match {
-    // case n: Numeric => TypeNat // TODO nums should be de-sugered when parsing
     case True | False => TypeBool
     case Zero => TypeNat
     case Pred(e) if typeof(ctx, e) == TypeNat => TypeNat
@@ -234,14 +246,14 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "if iszero (\\x: Bool. if true then 0 else 1) then true else false"
-//    val input = "(\\x: Nat. \\x: Bool. if x then 1 else 2) 1"
+//    val input = "if iszero (\\x: Bool. if x then a else b) true then true else false"
+    val input = "(\\x:Nat. \\y:Nat. iszero (y x)) \\f:Nat. f y"
     val tokens = new lexical.Scanner(input)
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
           println("parsed: " + trees)
-          println("typed: " + typeof(new HashMap[String, Type](), trees))
+//          println("typed: " + typeof(new HashMap[String, Type](), trees))
 //          println("typed: " + typeof(Nil, trees))
           for (t <- path(trees, reduce))
             println(t)
