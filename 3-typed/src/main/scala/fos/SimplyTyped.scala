@@ -116,7 +116,7 @@ object SimplyTyped extends StandardTokenParsers {
 	  case Abs(_,_,_) => true
 	  case True => true
 	  case False => true
-	  case Pair(_,_) => true
+	  case Pair(f, s) if isValue(f) && isValue(s) => true
 	  case t if isNumericVal(t) => true
 	  case _ => false
     }
@@ -133,6 +133,7 @@ object SimplyTyped extends StandardTokenParsers {
       // extension
       case Fst(t) => Fst(alpha0(t, y))
       case Snd(t) => Snd(alpha0(t, y))
+      case Pair(f, s) => Pair(alpha0(f, y), alpha0(s, y))
       
       // lambda
       case App(a, b) => App(alpha0(a, y), alpha0(b, y))
@@ -159,6 +160,7 @@ object SimplyTyped extends StandardTokenParsers {
     // extension
     case Fst(t) => Fst(subst(t, x, s))
     case Snd(t) => Snd(subst(t, x, s))
+    case Pair(fst, snd) => Pair(subst(fst, x, s), subst(s, x, snd))
     
     // lambda
     case Var(y) if (y == x) => s
@@ -185,6 +187,7 @@ object SimplyTyped extends StandardTokenParsers {
     // extension
     case Fst(t) => FV(t)
     case Snd(t) => FV(t)
+    case Pair(f, s) => FV(f) ::: FV(s)
     
     // lambda
     case a: Var => List(a)
@@ -297,7 +300,7 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "(\\x: Bool * Nat. if (fst x) then succ (snd x) else pred (snd x)) {false, 2}"
+    val input = "(\\y: Nat * Nat. \\x: Nat. if true then (fst y) else (snd y)) {1, 2}"
 //    val input = "(\\x:Nat. \\y:Nat. iszero (y x)) \\f:Nat. f y"
 //    val input = "let a:Nat = 2 in iszero a"
 //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Bool. iszero x) 0}"
