@@ -64,7 +64,7 @@ case object TypeNat extends Type {
 }
 
 case class TypeFun(from: Type, to: Type) extends Type {
-//  override def toString() = from + " -> " + to
+  override def toString() = "(" + from + " -> " + to + ")"
 }
 
 case class TypePair(fst: Type, snd: Type) extends Type {
