@@ -38,6 +38,7 @@ object SimplyTyped extends StandardTokenParsers {
    *               | "fst" Term
    *               | "snd" Term
    */
+
   def simpleTerm: Parser[Term] = positioned(
     "(" ~> term <~ ")" |
       ident ^^ { case e => Var(e) } |
@@ -97,8 +98,7 @@ object SimplyTyped extends StandardTokenParsers {
   }
 
   /** The context is a list of variable names paired with their type. */
-  type Context = List[(String, Type)]
-  type Context0 = HashMap[String, Type]
+  type Context = HashMap[String, Type]
 
   /** Is the given term a numeric value? */
   def isNumericVal(t: Term): Boolean = t match {
@@ -119,33 +119,33 @@ object SimplyTyped extends StandardTokenParsers {
       case _ => false
     }
 
-  /** Alpha conversion */
-  def alpha0(t: Term, y: String): Term = t match {
-    // arithetic
-    case Succ(t) => Succ(alpha0(t, y))
-    case Pred(t) => Pred(alpha0(t, y))
-    case IsZero(t) => IsZero(alpha0(t, y))
-    case If(cond, t, e) => If(alpha0(cond, y), alpha0(t, y), alpha0(e, y))
-
-    // extension
-    case Fst(t) => Fst(alpha0(t, y))
-    case Snd(t) => Snd(alpha0(t, y))
-    case Pair(f, s) => Pair(alpha0(f, y), alpha0(s, y))
-
-    // lambda
-    case App(a, b) => App(alpha0(a, y), alpha0(b, y))
-    //case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
-    case Abs(x, tp, t1) if x.v != y => Abs(x, tp, alpha0(t1, y))
-    case Var(x) if x == y => Var(x + "'")
-    case Var(x) if x != y => Var(x)
-    case t => t
-  }
-
-  def alpha(t: Term): Term = {
-    t match {
-      case Abs(Var(y), tp, t) => Abs(Var(y + "'"), tp, alpha0(t, y))
-    }
-  }
+  //  /** Alpha conversion */
+  //  def alpha0(t: Term, y: String): Term = t match {
+  //    // arithetic
+  //    case Succ(t) => Succ(alpha0(t, y))
+  //    case Pred(t) => Pred(alpha0(t, y))
+  //    case IsZero(t) => IsZero(alpha0(t, y))
+  //    case If(cond, t, e) => If(alpha0(cond, y), alpha0(t, y), alpha0(e, y))
+  //
+  //    // extension
+  //    case Fst(t) => Fst(alpha0(t, y))
+  //    case Snd(t) => Snd(alpha0(t, y))
+  //    case Pair(f, s) => Pair(alpha0(f, y), alpha0(s, y))
+  //
+  //    // lambda
+  //    case App(a, b) => App(alpha0(a, y), alpha0(b, y))
+  //    //case Abs(Var(x), t) => Abs(Var(y + "'"), alpha0(t, y))
+  //    case Abs(x, tp, t1) if x.v != y => Abs(x, tp, alpha0(t1, y))
+  //    case Var(x) if x == y => Var(x + "'")
+  //    case Var(x) if x != y => Var(x)
+  //    case t => t
+  //  }
+  //
+  //  def alpha(t: Term): Term = {
+  //    t match {
+  //      case Abs(Var(y), tp, t) => Abs(Var(y + "'"), tp, alpha0(t, y))
+  //    }
+  //  }
 
   /** Substitution */
   def subst(t: Term, x: String, s: Term): Term = t match {
@@ -164,34 +164,35 @@ object SimplyTyped extends StandardTokenParsers {
     case Var(y) if (y == x) => s
     case Var(y) if (y != x) => t
     case Abs(Var(y), _, t1) if (y == x) => t
-    case Abs(Var(y), tp, t1) if (y != x && !FV(s).exists(_.v == y)) => Abs(Var(y), tp, subst(t1, x, s))
-    case Abs(Var(y), _, t1) if (y != x && FV(s).exists(_.v == y)) => subst(alpha(t), x, s)
+    case Abs(Var(y), tp, t1) if (y != x) => Abs(Var(y), tp, subst(t1, x, s))
+    //    case Abs(Var(y), tp, t1) if (y != x && !FV(s).exists(_.v == y)) => Abs(Var(y), tp, subst(t1, x, s))
+    //    case Abs(Var(y), _, t1) if (y != x && FV(s).exists(_.v == y)) => subst(alpha(t), x, s)
     case App(t1, t2) => App(subst(t1, x, s), subst(t2, x, s))
 
     case e => e
   }
 
   /** Free variables in a term */
-  def FV(t: Term): List[Var] = t match {
-    // arithmetic
-    case Zero => Nil
-    case True => Nil
-    case False => Nil
-    case If(cond, t, e) => FV(cond) ::: FV(t) ::: FV(e)
-    case Pred(t) => FV(t)
-    case Succ(t) => FV(t)
-    case IsZero(t) => FV(t)
-
-    // extension
-    case Fst(t) => FV(t)
-    case Snd(t) => FV(t)
-    case Pair(f, s) => FV(f) ::: FV(s)
-
-    // lambda
-    case a: Var => List(a)
-    case Abs(Var(x), _, t1) => FV(t1).filter(_ != Var(x))
-    case App(t1, t2) => FV(t1) ::: FV(t2)
-  }
+  //  def FV(t: Term): List[Var] = t match {
+  //    // arithmetic
+  //    case Zero => Nil
+  //    case True => Nil
+  //    case False => Nil
+  //    case If(cond, t, e) => FV(cond) ::: FV(t) ::: FV(e)
+  //    case Pred(t) => FV(t)
+  //    case Succ(t) => FV(t)
+  //    case IsZero(t) => FV(t)
+  //
+  //    // extension
+  //    case Fst(t) => FV(t)
+  //    case Snd(t) => FV(t)
+  //    case Pair(f, s) => FV(f) ::: FV(s)
+  //
+  //    // lambda
+  //    case a: Var => List(a)
+  //    case Abs(Var(x), _, t1) => FV(t1).filter(_ != Var(x))
+  //    case App(t1, t2) => FV(t1) ::: FV(t2)
+  //  }
 
   /** Call by value reducer. */
   def reduce(t: Term): Term = t match {
@@ -232,18 +233,6 @@ object SimplyTyped extends StandardTokenParsers {
     else getType(ctx.tail, v)
   }
 
-  // TODO same variable name in the context ex: \\x.\\x. x y
-  /** Add a variable with its type into context, rename if necessary */
-  def addVarType(ctx: Context0, x: Var, t: Type): Context0 = {
-    if (!ctx.contains(x.v)) ctx.+((x.v, t))
-    else ctx.+((x.v + "'", t))
-  }
-
-  def convertVar(ctx: Context0, t: Term, x: Var): Term = {
-    if (ctx.contains(x.v + "'")) alpha0(t, x.v)
-    else t
-  }
-
   /**
    * Returns the type of the given term <code>t</code>.
    *
@@ -251,8 +240,8 @@ object SimplyTyped extends StandardTokenParsers {
    *  @param t   the given term
    *  @return    the computed type
    */
-  def typeof(ctx: Context0, t: Term): Type = t match {
-    //    def typeof(ctx: Context, t: Term): Type = t match {
+  def typeof(ctx: Context, t: Term): Type = t match {
+
     // arithmetic
     case True => TypeBool
     case False => TypeBool
@@ -263,25 +252,29 @@ object SimplyTyped extends StandardTokenParsers {
     case If(cond, t, e) if typeof(ctx, cond) == TypeBool && typeof(ctx, t) == typeof(ctx, e) => typeof(ctx, t)
 
     // extension
-    case Pair(f, s) if typeof(ctx, f).isInstanceOf[Type] && typeof(ctx, s).isInstanceOf[Type] => TypePair(typeof(ctx, f), typeof(ctx, s))
-    case Fst(p) if typeof(ctx, p).isInstanceOf[TypePair] => p match {
-      case Var(x) => val tt = ctx.get(x).get; tt.asInstanceOf[TypePair].f
-      case Pair(f, s) => typeof(ctx, f)
+    case Pair(f, s) =>
+      (typeof(ctx, f), typeof(ctx, s)) match {
+        case (tf: Type, ts: Type) => TypePair(tf, ts)
+      }
+    case Fst(p) => typeof(ctx, p) match {
+      case TypePair(tf, ts) => tf
+      case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
     }
-    case Snd(p) if typeof(ctx, p).isInstanceOf[TypePair] => p match {
-      case Var(x) => val tt = ctx.get(x).get; tt.asInstanceOf[TypePair].s
-      case Pair(f, s) => typeof(ctx, s)
+    case Snd(p) => typeof(ctx, p) match {
+      case TypePair(tf, ts) => ts
+      case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
     }
 
     // lambda
     case x: Var if ctx.contains(x.v) => ctx.get(x.v).get
-    //    case x: Var  if ctx.exists((pair:(String, Type))=> pair._1.equals(x.v))=> getType(ctx, x.v)
-    case Abs(x, tp, t) if typeof(ctx.+((x.v, tp)), t).isInstanceOf[Type] => TypeFun(tp, typeof(ctx.+((x.v, tp)), t))
-    //    case Abs(x, tp, t) if typeof(addVarType(ctx, x, tp) , convertVar(addVarType(ctx, x, tp), t, x)).isInstanceOf[Type]  => val cx = addVarType(ctx, x, tp); TypeFun(tp, typeof(cx, convertVar(cx, t, x)))
-    case App(l, r) if typeof(ctx, l).isInstanceOf[TypeFun] && typeof(ctx, r).isInstanceOf[Type] =>
-      typeof(ctx, l) match {
-        case TypeFun(t11, t12) if (t11 == typeof(ctx, r)) => t12
-      }
+    case Abs(x, tp, t) => typeof(ctx.+((x.v, tp)), t) match {
+      case tt: Type => TypeFun(tp, tt)
+    }
+    case App(l, r) => (typeof(ctx, l), typeof(ctx, r)) match {
+      case (TypeFun(t11, t12), tr: Type) if t11 == tr => t12
+      case (TypeFun(t11, t12), tr: Type) if t11 != tr => throw TypeError(t.pos, "parameter type mismatch: expected " + t11 + ", found " + tr)
+      case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
+    }
 
     case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
   }
@@ -303,21 +296,24 @@ object SimplyTyped extends StandardTokenParsers {
     }
 
   def main(args: Array[String]): Unit = {
-    // val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+    //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
+    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
+    //    val input = "(\\x:Nat.x) true"
+    //    val input = "(\\x:Nat. snd x) 1"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
-    //    val input = "(\\x:Nat. \\y:Nat. iszero (y x)) \\f:Nat. f y"
+    //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
     //    val input = "let a:Nat = 2 in iszero a"
-    //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Bool. iszero x) 0}"
-    //    val input = "(Nat->Bool) * (Bool->Nat) -> Bool"
-    //    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
-    val input = "\\x:Nat. \\x:Bool. if x then 1 else 0"
+    //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
+    //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
     val tokens = new lexical.Scanner(input)
+
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
+          println("For input :\n" + input)
           println("parsed: " + trees)
+          println("Result:")
           println("typed: " + typeof(new HashMap[String, Type](), trees))
-          //          println("typed: " + typeof(Nil, trees))
           for (t <- path(trees, reduce))
             println(t)
         } catch {

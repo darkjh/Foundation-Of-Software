@@ -35,7 +35,7 @@ case class Var(x: String) extends Term {
 }
 
 case class Abs(x: Var, tp: Type, t: Term) extends Term {
-  override def toString = "(" + "\\" + x + ": " + tp + "." + t + ")" 
+  override def toString = "(" + "\\" + x + ":" + tp + "." + t + ")" 
 }
 
 case class App(left: Term, right: Term) extends Term {
@@ -64,11 +64,19 @@ case object TypeNat extends Type {
 }
 
 case class TypeFun(from: Type, to: Type) extends Type {
-  override def toString() = "(" + from + " -> " + to + ")"
+  override def toString = (from, to) match {
+    case (x: TypeFun, y: TypeFun) => "(" + from + ")" + "->" + "(" + to + ")"
+    case (x: TypeFun, y: Type) => "(" + from + ")" + "->" + to
+    case (x: Type, y: Type) => from + "->" + to
+  }
 }
 
 case class TypePair(fst: Type, snd: Type) extends Type {
   val f = fst
   val s = snd
-//  override def toString() = fst + " * " + snd
+  override def toString = (f, s) match {
+    case (x: TypePair, y: TypePair) => "(" + f + ")" + "*" + "(" + s + ")"
+    case (x: TypePair, y: Type) => "(" + f + ")" + "*" + s
+    case (x: Type, y: Type) => f + "*" + s
+  }
 }
