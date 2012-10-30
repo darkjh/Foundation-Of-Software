@@ -38,7 +38,6 @@ object SimplyTyped extends StandardTokenParsers {
    *               | "fst" Term
    *               | "snd" Term
    */
-
   def simpleTerm: Parser[Term] = positioned(
     "(" ~> term <~ ")" |
       ident ^^ { case e => Var(e) } |
@@ -120,6 +119,7 @@ object SimplyTyped extends StandardTokenParsers {
     }
 
   //  /** Alpha conversion */
+  /** no free variables in STLC since they dont pass the type checker */
   //  def alpha0(t: Term, y: String): Term = t match {
   //    // arithetic
   //    case Succ(t) => Succ(alpha0(t, y))
@@ -158,7 +158,7 @@ object SimplyTyped extends StandardTokenParsers {
     // extension
     case Fst(t) => Fst(subst(t, x, s))
     case Snd(t) => Snd(subst(t, x, s))
-    case Pair(fst, snd) => Pair(subst(fst, x, s), subst(s, x, snd))
+    case Pair(fst, snd) => Pair(subst(fst, x, s), subst(snd, x, s))
 
     // lambda
     case Var(y) if (y == x) => s
@@ -173,6 +173,7 @@ object SimplyTyped extends StandardTokenParsers {
   }
 
   /** Free variables in a term */
+  /** no free variables in STLC since they dont pass the type checker */
   //  def FV(t: Term): List[Var] = t match {
   //    // arithmetic
   //    case Zero => Nil
@@ -224,13 +225,6 @@ object SimplyTyped extends StandardTokenParsers {
     case App(t1, t2) => App(reduce(t1), t2)
 
     case _ => throw NoRuleApplies(t)
-  }
-
-  /** Get the type for a variable from the context list */
-  def getType(ctx: Context, v: String): Type = {
-    if (ctx.isEmpty) null
-    else if (ctx.head._1 == v) ctx.head._2
-    else getType(ctx.tail, v)
   }
 
   /**
@@ -297,12 +291,12 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
+//    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
     //    val input = "(\\x:Nat.x) true"
     //    val input = "(\\x:Nat. snd x) 1"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
-    //    val input = "let a:Nat = 2 in iszero a"
+        val input = "let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}"
     //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
     val tokens = new lexical.Scanner(input)
@@ -310,9 +304,9 @@ object SimplyTyped extends StandardTokenParsers {
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
-          println("For input :\n" + input)
+          println("for input :\n" + input)
           println("parsed: " + trees)
-          println("Result:")
+          println("result:")
           println("typed: " + typeof(new HashMap[String, Type](), trees))
           for (t <- path(trees, reduce))
             println(t)

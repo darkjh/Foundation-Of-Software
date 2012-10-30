@@ -39,10 +39,11 @@ case class Abs(x: Var, tp: Type, t: Term) extends Term {
 }
 
 case class App(left: Term, right: Term) extends Term {
-  override def toString = (left, right) match {
-    case (x: Term, y: App) => left + " " + "(" + right + ")"
-    case (x: Term, y: Term) => left + " " + right
-  }
+  override def toString =
+    left + " " + (right match {
+      case _: App => "(" + right + ")"
+      case _      => right
+    })
 }
 
 case class Pair(fst: Term, snd: Term) extends Term {
@@ -72,11 +73,9 @@ case class TypeFun(from: Type, to: Type) extends Type {
 }
 
 case class TypePair(fst: Type, snd: Type) extends Type {
-  val f = fst
-  val s = snd
-  override def toString = (f, s) match {
-    case (x: TypePair, y: TypePair) => "(" + f + ")" + "*" + "(" + s + ")"
-    case (x: TypePair, y: Type) => "(" + f + ")" + "*" + s
-    case (x: Type, y: Type) => f + "*" + s
+  override def toString = (fst, snd) match {
+    case (x: TypePair, y: TypePair) => "(" + fst + ")" + "*" + "(" + snd + ")"
+    case (x: TypePair, y: Type) => "(" + fst + ")" + "*" + snd
+    case (x: Type, y: Type) => fst + "*" + snd
   }
 }
