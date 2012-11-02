@@ -13,7 +13,7 @@ import scala.collection.immutable.HashMap
 object SimplyTyped extends StandardTokenParsers {
   lexical.delimiters ++= List("(", ")", "\\", ".", ":", "=", "->", "{", "}", ",", "*", "+", "=>", "|")
   lexical.reserved ++= List("Bool", "Nat", "true", "false", "if", "then", "else", "succ",
-    "pred", "iszero", "let", "in", "fst", "snd", "inl", "inr", "of", "case", "fix")
+    "pred", "iszero", "let", "in", "fst", "snd", "inl", "inr", "of", "case", "fix", "as")
 
   /**
    * Term     ::= SimpleTerm { SimpleTerm }
@@ -56,7 +56,7 @@ object SimplyTyped extends StandardTokenParsers {
       "snd" ~> term ^^ { case p => Snd(p) } |
       ("inl" ~> term) ~ ("as" ~> tp) ^^ { case t ~ tp => Inl(t, tp) } |
       ("inr" ~> term) ~ ("as" ~> tp) ^^ { case t ~ tp => Inr(t, tp) } |
-      ("case" ~> term <~ "of") ~ ("inl" ~> term) ~ ("=>" ~> term <~ "|") ~ ("inr" ~> term) ~ ("=>" ~> term) ^^ {
+      ("case" ~> term <~ "of") ~ ("inl" ~> ident) ~ ("=>" ~> term <~ "|") ~ ("inr" ~> ident) ~ ("=>" ~> term) ^^ {
         case sum ~ inl ~ t1 ~ inr ~ t2 => Case(sum, inl, t1, inr, t2)
       } |
       failure("illegal start of simple term"))
@@ -65,7 +65,7 @@ object SimplyTyped extends StandardTokenParsers {
     "true" ^^^ True |
       "false" ^^^ False |
       numericValue |
-      ("{" ~> value <~ ",") ~ (value <~ "}") ^^ { case f ~ s => Pair(f, s) } | // why 2 times pair in parser ???
+      ("{" ~> value <~ ",") ~ (value <~ "}") ^^ { case f ~ s => Pair(f, s) } |
       ("inl" ~> value) ~ ("as" ~> tp) ^^ { case v ~ tp => Inl(v, tp) } |
       ("inr" ~> value) ~ ("as" ~> tp) ^^ { case v ~ tp => Inr(v, tp) } |
       failure("illegal start of expression")
@@ -85,17 +85,19 @@ object SimplyTyped extends StandardTokenParsers {
   /**
    * Type       ::= SimpleType [ "->" Type ]
    */
-  def pairTp: Parser[Type] = positioned(
-    simpleTp ~ rep("*" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypePair(_, _)) })
-    
-  def sumTp: Parser[Type] = positioned(
-    rep(simpleTp <~ "+") ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(TypeSum(_, _)) })
+//  def pairTp: Parser[Type] = positioned(
+//    simpleTp ~ rep("*" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypePair(_, _)) })
+//    
+//  def sumTp: Parser[Type] = positioned(
+//    rep(simpleTp <~ "+") ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(TypeSum(_, _)) })
   
-  def typeResolver(s: ~[Type, String]): Type = s match { case s ~ op => s }
+  def typeResolver(s: ~[Type, String], tp: Type): Type = s match { 
+    case ss ~ op if op == "+" => TypeSum(ss, tp)
+    case ss ~ op if op == "*" => TypePair(ss, tp)
+  }
     
   def complexTp: Parser[Type] = positioned(
-    rep(simpleTp ~ ("+" | "*")) ~ simpleTp ^^ { 
-      case (list @ List(s ~ op)) ~ tp if op == "+" => (list foldRight tp)(TypeSum(_, _))})
+    rep(simpleTp ~ ("+" | "*")) ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(typeResolver(_, _))})
     
 
   def simpleTp: Parser[Type] = positioned(
@@ -175,7 +177,7 @@ object SimplyTyped extends StandardTokenParsers {
     case Pred(t) => Pred(subst(t, x, s))
     case If(cond, t, e) => If(subst(cond, x, s), subst(t, x, s), subst(e, x, s))
 
-    // extension
+    // extension -- pair
     case Fst(t) => Fst(subst(t, x, s))
     case Snd(t) => Snd(subst(t, x, s))
     case Pair(fst, snd) => Pair(subst(fst, x, s), subst(snd, x, s))
@@ -265,7 +267,7 @@ object SimplyTyped extends StandardTokenParsers {
     case IsZero(e) if typeof(ctx, e) == TypeNat => TypeBool
     case If(cond, t, e) if typeof(ctx, cond) == TypeBool && typeof(ctx, t) == typeof(ctx, e) => typeof(ctx, t)
 
-    // extension
+    // extension -- pair
     case Pair(f, s) =>
       (typeof(ctx, f), typeof(ctx, s)) match {
         case (tf: Type, ts: Type) => TypePair(tf, ts)
@@ -278,6 +280,13 @@ object SimplyTyped extends StandardTokenParsers {
       case TypePair(tf, ts) => ts
       case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
     }
+    
+    // extension -- sum
+//    case Inl(t, tp) => tp match {
+//      case TypeSum(l, r) => typeof(ctx, t) match {
+//        
+//      }
+//    }
 
     // lambda
     case x: Var if ctx.contains(x.v) => ctx.get(x.v).get
@@ -312,7 +321,7 @@ object SimplyTyped extends StandardTokenParsers {
   def main(args: Array[String]): Unit = {
     //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
 //    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
-        val input = "Nat + Bool + Nat + Bool"
+        val input = "case (inl 2 as Nat + Nat) of inl a => succ a | inr a => pred a"
     //    val input = "(\\x:Nat. snd x) 1"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
@@ -321,7 +330,7 @@ object SimplyTyped extends StandardTokenParsers {
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
     val tokens = new lexical.Scanner(input)
 
-    phrase(tp)(tokens) match {
+    phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
           println("for input :\n" + input)

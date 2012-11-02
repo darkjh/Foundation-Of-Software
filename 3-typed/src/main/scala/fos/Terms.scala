@@ -51,7 +51,9 @@ case class Snd(p: Term) extends Term
 
 case class Inl(p: Term, tp: Type) extends Term
 case class Inr(p: Term, tp: Type) extends Term
-case class Case(sum: Term, inl: Term, t1: Term, inr: Term, t2: Term) extends Term
+case class Case(sum: Term, inl: String, t1: Term, inr: String, t2: Term) extends Term
+
+
 
 /** Abstract Syntax Trees for types. */
 abstract class Type extends Term
