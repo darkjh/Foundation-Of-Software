@@ -53,7 +53,7 @@ case class Inl(p: Term, tp: Type) extends Term
 case class Inr(p: Term, tp: Type) extends Term
 case class Case(sum: Term, inl: String, t1: Term, inr: String, t2: Term) extends Term
 
-
+case class Fix(t: Term) extends Term
 
 /** Abstract Syntax Trees for types. */
 abstract class Type extends Term

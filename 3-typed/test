@@ -1,0 +1,1 @@
+let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}

@@ -13,7 +13,7 @@ import scala.collection.immutable.HashMap
 object SimplyTyped extends StandardTokenParsers {
   lexical.delimiters ++= List("(", ")", "\\", ".", ":", "=", "->", "{", "}", ",", "*", "+", "=>", "|")
   lexical.reserved ++= List("Bool", "Nat", "true", "false", "if", "then", "else", "succ",
-    "pred", "iszero", "let", "in", "fst", "snd", "inl", "inr", "of", "case", "fix", "as")
+    "pred", "iszero", "let", "in", "fst", "snd", "inl", "inr", "of", "case", "fix", "as", "letrec")
 
   /**
    * Term     ::= SimpleTerm { SimpleTerm }
@@ -39,7 +39,7 @@ object SimplyTyped extends StandardTokenParsers {
    *               | "snd" Term
    *               | "inl" Term "as" Type
    *               | "inr" Term "as" Type
-   *               | "case" Term "of" "inl" x "=>" t "|" "inr" x "=>" t 
+   *               | "case" Term "of" "inl" x "=>" t "|" "inr" x "=>" t
    */
   def simpleTerm: Parser[Term] = positioned(
     "(" ~> term <~ ")" |
@@ -59,6 +59,8 @@ object SimplyTyped extends StandardTokenParsers {
       ("case" ~> term <~ "of") ~ ("inl" ~> ident) ~ ("=>" ~> term <~ "|") ~ ("inr" ~> ident) ~ ("=>" ~> term) ^^ {
         case sum ~ inl ~ t1 ~ inr ~ t2 => Case(sum, inl, t1, inr, t2)
       } |
+      "fix" ~> term ^^ { case t => Fix(t) } |
+      "letrec" ~> ident ~ (":" ~> tp) ~ ("=" ~> term) ~ ("in" ~> term) ^^ { case x ~ tp ~ t1 ~ t2 => App(Abs(Var(x), tp, t2), Fix(Abs(Var(x), tp, t1))) } |
       failure("illegal start of simple term"))
 
   def value: Parser[Term] = {
@@ -85,20 +87,19 @@ object SimplyTyped extends StandardTokenParsers {
   /**
    * Type       ::= SimpleType [ "->" Type ]
    */
-//  def pairTp: Parser[Type] = positioned(
-//    simpleTp ~ rep("*" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypePair(_, _)) })
-//    
-//  def sumTp: Parser[Type] = positioned(
-//    rep(simpleTp <~ "+") ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(TypeSum(_, _)) })
-  
-  def typeResolver(s: ~[Type, String], tp: Type): Type = s match { 
+  //  def pairTp: Parser[Type] = positioned(
+  //    simpleTp ~ rep("*" ~> simpleTp) ^^ { case tp ~ list => (tp /: list)(TypePair(_, _)) })
+  //    
+  //  def sumTp: Parser[Type] = positioned(
+  //    rep(simpleTp <~ "+") ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(TypeSum(_, _)) })
+
+  def typeResolver(s: ~[Type, String], tp: Type): Type = s match {
     case ss ~ op if op == "+" => TypeSum(ss, tp)
     case ss ~ op if op == "*" => TypePair(ss, tp)
   }
-    
+
   def complexTp: Parser[Type] = positioned(
-    rep(simpleTp ~ ("+" | "*")) ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(typeResolver(_, _))})
-    
+    rep(simpleTp ~ ("+" | "*")) ~ simpleTp ^^ { case list ~ tp => (list foldRight tp)(typeResolver(_, _)) })
 
   def simpleTp: Parser[Type] = positioned(
     "Bool" ^^^ TypeBool |
@@ -246,6 +247,10 @@ object SimplyTyped extends StandardTokenParsers {
     case App(t1, t2) if isValue(t1) => App(t1, reduce(t2))
     case App(t1, t2) => App(reduce(t1), t2)
 
+    // fix point
+    case Fix(a @ Abs(x, tp, t2)) => subst(t2, x.v, Fix(a))
+    case Fix(t) => Fix(reduce(t))
+
     case _ => throw NoRuleApplies(t)
   }
 
@@ -280,13 +285,19 @@ object SimplyTyped extends StandardTokenParsers {
       case TypePair(tf, ts) => ts
       case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
     }
-    
+
     // extension -- sum
-//    case Inl(t, tp) => tp match {
-//      case TypeSum(l, r) => typeof(ctx, t) match {
-//        
-//      }
-//    }
+    //    case Inl(t, tp) => tp match {
+    //      case TypeSum(l, r) => typeof(ctx, t) match {
+    //        
+    //      }
+    //    }
+
+    // extension -- fix point
+    case Fix(t) => typeof(ctx, t) match {
+      case TypeFun(tp1, tp2) if (tp1 == tp2) => tp1
+      case _ => throw TypeError(t.pos, "type error at: " + t + "\ncontext: " + ctx.toString)
+    }
 
     // lambda
     case x: Var if ctx.contains(x.v) => ctx.get(x.v).get
@@ -320,14 +331,27 @@ object SimplyTyped extends StandardTokenParsers {
 
   def main(args: Array[String]): Unit = {
     //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-//    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
-        val input = "case (inl 2 as Nat + Nat) of inl a => succ a | inr a => pred a"
+    //    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
+    //val input = "case (inl 2 as Nat + Nat) of inl a => succ a | inr a => pred a"
     //    val input = "(\\x:Nat. snd x) 1"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
-//        val input = "let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}"
+    //        val input = "let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}"
     //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
+    //    val input = "(fix (\\f:Nat->Bool. " +
+    //    		"\\x:Nat. " +
+    //    		"if iszero x then true " +
+    //    		"else if iszero (pred x) then false " +
+    //    		"else  f (pred (pred x)))) " +
+    //    		"succ succ 0"
+
+    val input = "letrec f: Nat->Nat =" +
+      "\\x:Nat. " +
+      "if iszero x then 0 " +
+      "else succ( f (pred x) )" +
+      "in f 3"
+
     val tokens = new lexical.Scanner(input)
 
     phrase(term)(tokens) match {
