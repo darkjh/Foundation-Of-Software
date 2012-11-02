@@ -21,11 +21,7 @@ case class IsZero(t: Term) extends Term
 
 case class Succ(t: Term) extends Term 
 
-case class Pred(t: Term) extends Term 
-
-//case class Numeric(t: Int) extends Term {
-//  override def toString =  t.toString
-//}
+case class Pred(t: Term) extends Term
 
 case class If(t1: Term, t2: Term, t3: Term) extends Term 
 
@@ -53,6 +49,10 @@ case class Pair(fst: Term, snd: Term) extends Term {
 case class Fst(p: Term) extends Term
 case class Snd(p: Term) extends Term
 
+case class Inl(p: Term, tp: Type) extends Term
+case class Inr(p: Term, tp: Type) extends Term
+case class Case(sum: Term, inl: Term, t1: Term, inr: Term, t2: Term) extends Term
+
 /** Abstract Syntax Trees for types. */
 abstract class Type extends Term
 
@@ -79,3 +79,12 @@ case class TypePair(fst: Type, snd: Type) extends Type {
     case (x: Type, y: Type) => fst + "*" + snd
   }
 }
+
+case class TypeSum(inl: Type, inr: Type) extends Type {
+  override def toString = (inl, inr) match {
+    case (x: TypeSum, y: TypeSum) => "(" + inl + ")" + "+" + "(" + inr + ")"
+    case (x: TypeSum, y: Type) => "(" + inl + ")" + "+" + inr
+    case (x: Type, y: Type) => inl + "+" + inr
+  }
+}
+
