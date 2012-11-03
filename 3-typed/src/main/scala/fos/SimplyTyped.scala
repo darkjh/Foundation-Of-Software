@@ -188,7 +188,12 @@ object SimplyTyped extends StandardTokenParsers {
     // extension -- sum
     case Inl(t, tp) => Inl(subst(t, x, s), tp)
     case Inr(t, tp) => Inr(subst(t, x, s), tp)
-    case Case(sum, inl, t1, inr, t2) => Case(subst(sum, x, s), inl, subst(t1, x, s), inr, subst(t2, x, s))
+    case Case(sum, inl, t1, inr, t2) => {
+      if (x == inl && x == inr) Case(subst(sum, x, s), inl, t1, inr, t2)
+      else if (x == inl && x != inr) Case(subst(sum, x, s), inl, t1, inr, subst(t2, x, s))
+      else if (x != inl && x == inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, t2)
+      else Case(subst(sum, x, s), inl, subst(t1, x, s), inr, subst(t2, x, s))
+    }
 
     // lambda
     case Var(y) if (y == x) => s
@@ -366,9 +371,10 @@ object SimplyTyped extends StandardTokenParsers {
     //        val input = "inr 1 as Nat + Bool"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
-    //        val input = "let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}"
+            val input = "(\\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \\x:Nat .x as (Nat-> Nat) + Nat)"
     //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
+    
 //        val input = "(fix (\\f:Nat->Bool. " +
 //        		"\\x:Nat. " +
 //        		"if iszero x then true " +
@@ -376,11 +382,11 @@ object SimplyTyped extends StandardTokenParsers {
 //        		"else  f (pred (pred x)))) " +
 //        		"succ succ 0"
 
-    val input = "letrec f: Nat->Nat =" +
-      "\\x:Nat. " +
-      "if iszero x then 0 " +
-      "else succ( f (pred x) )" +
-      "in f 3"
+//    val input = "letrec f: Nat->Nat =" +
+//      "\\x:Nat. " +
+//      "if iszero x then 0 " +
+//      "else succ( f (pred x) )" +
+//      "in f 3"
 
     val tokens = new lexical.Scanner(input)
 
