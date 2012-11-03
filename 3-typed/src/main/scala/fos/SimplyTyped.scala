@@ -188,12 +188,7 @@ object SimplyTyped extends StandardTokenParsers {
     // extension -- sum
     case Inl(t, tp) => Inl(subst(t, x, s), tp)
     case Inr(t, tp) => Inr(subst(t, x, s), tp)
-    case Case(sum, inl, t1, inr, t2) => {
-      if (x == inl && x == inr) Case(subst(sum, x, s), inl, t1, inr, t2)
-      else if (x == inl && x != inr) Case(subst(sum, x, s), inl, t1, inr, subst(t2, x, s))
-      else if (x != inl && x == inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, t2)
-      else Case(subst(sum, x, s), inl, subst(t1, x, s), inr, subst(t2, x, s))
-    }
+    case Case(sum, inl, t1, inr, t2) => Case(subst(sum, x, s), inl, t1, inr, t2)
 
     // lambda
     case Var(y) if (y == x) => s
