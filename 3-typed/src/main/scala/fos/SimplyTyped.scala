@@ -188,7 +188,11 @@ object SimplyTyped extends StandardTokenParsers {
     // extension -- sum
     case Inl(t, tp) => Inl(subst(t, x, s), tp)
     case Inr(t, tp) => Inr(subst(t, x, s), tp)
-    case Case(sum, inl, t1, inr, t2) => Case(subst(sum, x, s), inl, t1, inr, t2)
+    case Case(sum, inl, t1, inr, t2) => 
+      if (x != inl && x != inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, subst(t2, x, s))
+      else if(x == inl && x != inr) Case(subst(sum, x, s), inl, t1, inr, subst(t2, x, s))
+      else if(x != inl && x == inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, t2)
+      else Case(subst(sum, x, s), inl, t1, inr, t2)
 
     // extension -- fix 
     case Fix(tm) => Fix(subst(tm, x, s))
@@ -369,16 +373,17 @@ object SimplyTyped extends StandardTokenParsers {
     //        val input = "inr 1 as Nat + Bool"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
-    //            val input = "(\\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \\x:Nat .x as (Nat-> Nat) + Nat)"
+//                val input = "(\\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \\x:Nat .x as (Nat-> Nat) + Nat)"
+    val input = "(\\y:Nat->Nat. case inl 4 as Nat+Nat of inl x => y x | inr x => succ (y x)) (\\x:Nat. succ x)"
     //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
 
-    val input = "((\\t:(Nat->Bool)->Nat->Bool. fix t)(\\f:Nat->Bool. " +
-      "\\x:Nat. " +
-      "if iszero x then true " +
-      "else if iszero (pred x) then false " +
-      "else  f (pred (pred x)))) " +
-      "succ succ 0"
+//    val input = "((\\t:(Nat->Bool)->Nat->Bool. fix t)(\\f:Nat->Bool. " +
+//      "\\x:Nat. " +
+//      "if iszero x then true " +
+//      "else if iszero (pred x) then false " +
+//      "else  f (pred (pred x)))) " +
+//      "succ succ 0"
 
     //    val input = "letrec f: Nat->Nat =" +
     //      "\\x:Nat. " +

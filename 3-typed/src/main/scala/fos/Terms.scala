@@ -31,7 +31,7 @@ case class Var(x: String) extends Term {
 }
 
 case class Abs(x: Var, tp: Type, t: Term) extends Term {
-  override def toString = "(" + "\\" + x + ":" + tp + "." + t + ")" 
+  override def toString = "(" + "\\" + x + ":" + tp + ". " + t + ")" 
 }
 
 case class App(left: Term, right: Term) extends Term {
@@ -49,9 +49,16 @@ case class Pair(fst: Term, snd: Term) extends Term {
 case class Fst(p: Term) extends Term
 case class Snd(p: Term) extends Term
 
-case class Inl(p: Term, tp: Type) extends Term
-case class Inr(p: Term, tp: Type) extends Term
-case class Case(sum: Term, inl: String, t1: Term, inr: String, t2: Term) extends Term
+case class Inl(p: Term, tp: Type) extends Term {
+  override def toString = "inl " + p + ": " + tp
+}
+case class Inr(p: Term, tp: Type) extends Term {
+  override def toString = "inr " + p + ": " + tp
+}
+
+case class Case(sum: Term, inl: String, t1: Term, inr: String, t2: Term) extends Term {
+  override def toString = "case " + sum + " of " + "inl " + inl + " => " + t1 + " | " + "inr " + inr + " => " + t2
+}
 
 case class Fix(t: Term) extends Term {
 	override def toString = "fix " + t
