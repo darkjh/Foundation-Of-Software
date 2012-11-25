@@ -1,1 +1,1 @@
-let a:Nat = 2 in let b:Bool = false in if b then {b, a} else {b, succ a}
+(\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \x:Nat .x as (Nat-> Nat) + Nat)

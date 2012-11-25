@@ -188,10 +188,10 @@ object SimplyTyped extends StandardTokenParsers {
     // extension -- sum
     case Inl(t, tp) => Inl(subst(t, x, s), tp)
     case Inr(t, tp) => Inr(subst(t, x, s), tp)
-    case Case(sum, inl, t1, inr, t2) => 
+    case Case(sum, inl, t1, inr, t2) =>
       if (x != inl && x != inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, subst(t2, x, s))
-      else if(x == inl && x != inr) Case(subst(sum, x, s), inl, t1, inr, subst(t2, x, s))
-      else if(x != inl && x == inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, t2)
+      else if (x == inl && x != inr) Case(subst(sum, x, s), inl, t1, inr, subst(t2, x, s))
+      else if (x != inl && x == inr) Case(subst(sum, x, s), inl, subst(t1, x, s), inr, t2)
       else Case(subst(sum, x, s), inl, t1, inr, t2)
 
     // extension -- fix 
@@ -366,37 +366,34 @@ object SimplyTyped extends StandardTokenParsers {
     }
 
   def main(args: Array[String]): Unit = {
-    //    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
-
+    val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
     //    val input = "(\\x:Nat->Bool. (\\y:Nat.(x y))) (\\x:Nat.(iszero x)) 0"
-    //        val input = "case (inr false as Nat + Bool) of inl a => succ a | inr a => 1"
-    //        val input = "inr 1 as Nat + Bool"
+    //    val input = "case (inr false as Nat + Bool) of inl a => succ a | inr a => 1"
+    //    val input = "inr 1 as Nat + Bool"
     //    val input = "(\\y:Nat->Nat. (\\f:Nat->Nat. \\y:Nat. f y) (\\x:Nat. y succ(x)))"
     //    val input = "(\\x:Nat. \\y:Nat. iszero (y x))"
-//                val input = "(\\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \\x:Nat .x as (Nat-> Nat) + Nat)"
-    val input = "(\\y:Nat->Nat. case inl 4 as Nat+Nat of inl x => y x | inr x => succ (y x)) (\\x:Nat. succ x)"
+    //    val input = "(\\x:(Nat->Nat)+Nat . case x of inl x => x 0 | inr x => x) (inl \\x:Nat .x as (Nat-> Nat) + Nat)"
+    //    val input = "(\\y:Nat->Nat. case inl 4 as Nat+Nat of inl x => y x | inr x => succ (y x)) (\\x:Nat. succ x)"
     //    val input = "fst {(\\x:Nat. succ x) 1, (\\x:Nat. iszero x) 0}"
     //    val input = "(\\y:Nat*Bool. \\x:Nat*Bool. {x, {1,y}} )"
-
-//    val input = "((\\t:(Nat->Bool)->Nat->Bool. fix t)(\\f:Nat->Bool. " +
-//      "\\x:Nat. " +
-//      "if iszero x then true " +
-//      "else if iszero (pred x) then false " +
-//      "else  f (pred (pred x)))) " +
-//      "succ succ 0"
-
-    //    val input = "letrec f: Nat->Nat =" +
+    //    val input = "((\\t:(Nat->Bool)->Nat->Bool. fix t)(\\f:Nat->Bool. " +
     //      "\\x:Nat. " +
-    //      "if iszero x then 0 " +
-    //      "else succ( f (pred x) )" +
-    //      "in f 3"
+    //      "if iszero x then true " +
+    //      "else if iszero (pred x) then false " +
+    //      "else  f (pred (pred x)))) " +
+    //      "succ succ 0"
+    //        val input = "letrec f: Nat->Nat =" +
+    //          "\\x:Nat. " +
+    //          "if iszero x then 0 " +
+    //          "else succ( f (pred x) )" +
+    //          "in f 3"
 
-    val tokens = new lexical.Scanner(input)
+    //    val tokens = new lexical.Scanner(input)
 
     phrase(term)(tokens) match {
       case Success(trees, _) =>
         try {
-          println("for input :\n" + input)
+          //          println("for input :\n" + input)
           println("parsed: " + trees)
           println("result:")
           println("typed: " + typeof(new HashMap[String, Type](), trees))
