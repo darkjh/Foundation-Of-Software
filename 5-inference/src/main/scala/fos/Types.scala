@@ -13,6 +13,11 @@ abstract class Type {
 
 case class TypeVar(name: String) extends Type
   //   ... To complete ... 
+case class TypeFun(from: Type, to: Type) extends Type 
+case object TypeBool extends Type 
+case object TypeNat extends Type 
+
+
 
 /** Type Schemes are not types. */
 case class TypeScheme(args: List[TypeVar], tp: Type) {
@@ -27,13 +32,16 @@ object Type {
 abstract class Substitution extends (Type => Type) {
   
   var indent = 0
-  
-  //   ... To complete ... 
+
+  val env: List[(String, Type)]
+  //   ... To complete ...
   def apply(tp: Type): Type = {
     //println("  " * indent + "in: " + tp + "   subst: " + this)
     indent = indent + 1
     val result = tp match {
-  //   ... To complete ... 
+  //   ... To complete ...
+      case x: TypeVar => lookup(x)
+      
     }
     indent = indent - 1
     //println("  " * indent + "out: " + result + "   subst: " + this)
@@ -49,6 +57,7 @@ abstract class Substitution extends (Type => Type) {
     env map { (pair) => (pair._1, TypeScheme(pair._2.args, apply(pair._2.tp))) }
   
   //   ... To complete ... 
+  def lookup(t: TypeVar) 
 }
 
 /** The empty substitution. */
