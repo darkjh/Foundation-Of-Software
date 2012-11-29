@@ -29,8 +29,10 @@ object Type {
   //   ... To complete ... 
 }
 
-abstract class Substitution extends (Type => Type) {
 
+abstract class Substitution extends (Type => Type) { 
+  subst => 
+  
   var indent = 0
 
   //   ... To complete ...
@@ -59,11 +61,15 @@ abstract class Substitution extends (Type => Type) {
   //   ... To complete ... 
   def lookup(t: TypeVar): Type
 
-  def extend(x: TypeVar, y: Type) = new Substitution {
-    def lookup(tv: TypeVar) = {
-      if (tv == x) y else x
+  def extend(tv: TypeVar, y: Type) = new Substitution {
+    def lookup(t: TypeVar) = {
+      if (t == tv) y
+      else subst.lookup(t)
     }
   }
+  
+  def compose(that: Substitution) = 
+    (t: Type) => subst(that(t))
 }
 
 /** The empty substitution. */

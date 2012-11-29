@@ -12,22 +12,22 @@ class TwoPhaseInferencer extends TypeInferencers {
   /** Type <code>t</code> in <code>env</code> and return its type and a
    *  constraint list.
    */
-  def collect(env: Env, t: Term): TypingResult = TypingResult(TypeNat, Nil)//t match {
-//    case Var(x) =>
-//      val t1 = lookup(env, x)
-//      if (t1 == null)
-//        throw TypeError("Unknown variable " + x)
-//      TypingResult(t1.instantiate, noContraints)
+  def collect(env: Env, t: Term): TypingResult = t match {
+    case Var(x) =>
+      val t1 = lookup(env, x)
+      if (t1 == null)
+        throw TypeError("Unknown variable " + x)
+      TypingResult(t1.instantiate, noContraints)
   //   ... To complete ... 
-//  }
+  }
 
   /**
    */
   def unify(c: List[Constraint]): Substitution =
     if (c.isEmpty) emptySubst
     else c.head match {
-      case (TypeVar(a), TypeVar(b)) if (a == b) =>
-        unify(c.tail)
+      case (TypeVar(a), TypeVar(b)) if (a == b) => unify(c.tail)
+
   //   ... To complete ... 
       case (t1, t2) =>
         throw TypeError("Could not unify: " + t1 + " with " + t2)
