@@ -12,14 +12,14 @@ class TwoPhaseInferencer extends TypeInferencers {
   /** Type <code>t</code> in <code>env</code> and return its type and a
    *  constraint list.
    */
-  def collect(env: Env, t: Term): TypingResult = t match {
-    case Var(x) =>
-      val t1 = lookup(env, x)
-      if (t1 == null)
-        throw TypeError("Unknown variable " + x)
-      TypingResult(t1.instantiate, noContraints)
+  def collect(env: Env, t: Term): TypingResult = TypingResult(TypeNat, Nil)//t match {
+//    case Var(x) =>
+//      val t1 = lookup(env, x)
+//      if (t1 == null)
+//        throw TypeError("Unknown variable " + x)
+//      TypingResult(t1.instantiate, noContraints)
   //   ... To complete ... 
-  }
+//  }
 
   /**
    */

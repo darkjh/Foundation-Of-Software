@@ -7,7 +7,7 @@ abstract class TypeInferencers {
 
   case class TypeError(msg: String) extends Exception(msg)
 
-  /** Lookup variable <code>name</code> in the given environment. */
+  /** Lookup variable <code>n gname</code> in the given environment. */
   def lookup(env: Env, name: String): TypeScheme = env match {
     case Nil => null
     case (n, tp) :: env1 => if (n == name) tp else lookup(env1, name)
