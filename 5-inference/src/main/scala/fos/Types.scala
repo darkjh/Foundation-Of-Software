@@ -27,7 +27,8 @@ object Type {
   //   ... To complete ... 
 }
 
-abstract class Substitution extends (Type => Type) {
+abstract class Substitution extends (Type => Type) { 
+  subst => 
   
   var indent = 0
 
@@ -54,11 +55,17 @@ abstract class Substitution extends (Type => Type) {
 
   def apply(env: List[(String, TypeScheme)]): List[(String, TypeScheme)] = 
     env map { (pair) => (pair._1, TypeScheme(pair._2.args, apply(pair._2.tp))) }
+  
+  def extend(tv: TypeVar, y: Type) = new Substitution {
+    def lookup(t: TypeVar) = {
+      if (t == tv) y
+      else subst.lookup(t)
+    }
+  }
+  
+  def compose(that: Substitution) = 
+    (t: Type) => subst(that(t))
 }
-
-//def extend(x: TypeVar, y: Type) = new Substitution {
-//  def lookup(tv: TypeVar) = if (tv ==)
-//}
 
 /** The empty substitution. */
 object emptySubst extends Substitution {
