@@ -12,7 +12,9 @@ abstract class Type {
 }
 
 case class TypeVar(name: String) extends Type
-  //   ... To complete ... 
+case class TypeFun(t1: Type, t2: Type) extends Type
+case object TypeNat extends Type
+case object TypeBool extends Type
 
 /** Type Schemes are not types. */
 case class TypeScheme(args: List[TypeVar], tp: Type) {
@@ -20,6 +22,7 @@ case class TypeScheme(args: List[TypeVar], tp: Type) {
   override def toString() = args.mkString("[", ", ", "].") + tp
 }
 
+// type related static methods
 object Type {
   //   ... To complete ... 
 }
@@ -27,13 +30,17 @@ object Type {
 abstract class Substitution extends (Type => Type) {
   
   var indent = 0
+
+  def lookup(t: TypeVar): Type
   
-  //   ... To complete ... 
   def apply(tp: Type): Type = {
     //println("  " * indent + "in: " + tp + "   subst: " + this)
     indent = indent + 1
     val result = tp match {
-  //   ... To complete ... 
+      case TypeNat => TypeNat
+      case TypeBool => TypeBool
+      case TypeFun(t1, t2) => TypeFun(this(t1), this(t2))
+      case tv @ TypeVar(s) => lookup(tv)
     }
     indent = indent - 1
     //println("  " * indent + "out: " + result + "   subst: " + this)
@@ -47,9 +54,11 @@ abstract class Substitution extends (Type => Type) {
 
   def apply(env: List[(String, TypeScheme)]): List[(String, TypeScheme)] = 
     env map { (pair) => (pair._1, TypeScheme(pair._2.args, apply(pair._2.tp))) }
-  
-  //   ... To complete ... 
 }
+
+//def extend(x: TypeVar, y: Type) = new Substitution {
+//  def lookup(tv: TypeVar) = if (tv ==)
+//}
 
 /** The empty substitution. */
 object emptySubst extends Substitution {
