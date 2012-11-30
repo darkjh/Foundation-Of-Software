@@ -27,6 +27,8 @@ class TwoPhaseInferencer extends TypeInferencers {
     if (c.isEmpty) emptySubst
     else c.head match {
       case (TypeVar(a), TypeVar(b)) if (a == b) => unify(c.tail)
+//      case (TypeVar(a), _) =>
+      case (TypeFun(l1, l2), TypeFun(r1, r2)) => unify(List((l1, r1)))  unify(List((l2, r2)))  
 
   //   ... To complete ... 
       case (t1, t2) =>

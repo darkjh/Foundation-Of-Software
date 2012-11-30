@@ -1,6 +1,7 @@
 package fos
 
 import scala.collection.immutable.{ Set, ListSet }
+import com.sun.org.apache.xerces.internal.impl.xs.SubstitutionGroupHandler
 
 abstract class Type {
   override def toString() = this match {
@@ -68,9 +69,11 @@ abstract class Substitution extends (Type => Type) {
     }
   }
   
-  def compose(that: Substitution) = 
-    (t: Type) => subst(that(t))
+  def compose(that: Substitution): Substitution = new Substitution {
+	  def apply(tp: Type) = subst(that(tp))
+  }  
 }
+
 
 /** The empty substitution. */
 object emptySubst extends Substitution {
