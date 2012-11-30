@@ -70,10 +70,10 @@ abstract class Substitution extends (Type => Type) {
   }
   
   def compose(that: Substitution): Substitution = new Substitution {
-	  def apply(tp: Type) = subst(that(tp))
+	  override def apply(tp: Type) = subst(that(tp))
+	  def lookup(t: TypeVar): Type = throw new RuntimeException()
   }  
 }
-
 
 /** The empty substitution. */
 object emptySubst extends Substitution {
