@@ -79,12 +79,12 @@ object Infer extends StandardTokenParsers {
   def main(args: Array[String]) {
     val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
     phrase(Term)(tokens) match {
-      case Success(trees, _) =>
-        try {
-          println("typed: " + Inferencer.typeOf(trees))
-        } catch {
-          case tperror => println(tperror.toString)
-        }
+//      case Success(trees, _) =>
+//        try {
+//          println("typed: " + Inferencer.typeOf(trees))
+//        } catch {
+//          case tperror => println(tperror.toString)
+//        }
       case e =>
         println(e)
     }
