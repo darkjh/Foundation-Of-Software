@@ -29,7 +29,7 @@ class TwoPhaseInferencer extends TypeInferencers {
     }
     case IsZero(tm) => collect(env, tm) match {
       case TypingResult(tp, cons) => TypingResult(TypeBool, (tp, TypeNat) :: cons)
-      case _ => throw TypeError("Bool expected")
+      case _ => throw TypeError("Nat expected")
     }
     case If(c, t, e) => {
       val tc = collect(env, c)
@@ -40,18 +40,21 @@ class TwoPhaseInferencer extends TypeInferencers {
     case Var(x) => {
       val t1 = lookup(env, x)
       if (t1 == null) throw TypeError("Unknown variable " + x)
-      // else TypingResult(t1.instantiate, noConstraints)
-      else TypingResult(t1, noConstraints)
+      else TypingResult(t1.instantiate, noConstraints)
+      // else TypingResult(t1, noConstraints)
     }
     case Abs(v, tp, t) => {
       tp match {
         case EmptyType => {
-          val fresh = TypeVar(freshTypeName)
-          val sub = collect((v, fresh) :: env, t)
-          TypingResult(TypeFun(fresh, sub.tpe), sub.c)
+          val newTypeVar = TypeVar(freshTypeBase)
+          val ts = TypeScheme(Nil, newTypeVar)
+          val sub = collect((v, ts) :: env, t)
+          TypingResult(TypeFun(newTypeVar, sub.tpe), sub.c)
         }
         case tt => {
-          val sub = collect((v, toType(tt)) :: env, t)
+          val boundTp = toType(tt)
+          val listTypeVars = tv(boundTp)
+          val sub = collect((v, TypeScheme(listTypeVars, toType(tt))) :: env, t)
           TypingResult(TypeFun(toType(tt), sub.tpe), sub.c)
         }
       }
@@ -59,8 +62,18 @@ class TwoPhaseInferencer extends TypeInferencers {
     case App(t1, t2) => {
       val sub1 = collect(env, t1)
       val sub2 = collect(env, t2)
-      val fresh = TypeVar(freshTypeName)
+      val fresh = TypeVar(freshTypeName(freshTypeBase))
       TypingResult(fresh, (sub1.tpe, TypeFun(sub2.tpe, fresh)) :: sub1.c ++ sub2.c)
+    }
+    
+    case Let(x, v, t) => {
+      val tr_v = collect(env, v)
+      val pt_v = unify(tr_v.c)(tr_v.tpe)
+      val tvNotInEnv = tv(pt_v) filter ((v: TypeVar) => lookup(env, v.name) == null)
+      val ts_v = TypeScheme(tvNotInEnv, pt_v)
+      
+      val tr_t = collect((x, ts_v) :: env, t)
+      TypingResult(tr_t.tpe, tr_t.c)
     }
   }
 
@@ -69,12 +82,11 @@ class TwoPhaseInferencer extends TypeInferencers {
   def unify(c: List[Constraint]): Substitution =
     if (c.isEmpty) emptySubst
     else c.head match {
-      case (TypeVar(a), TypeVar(b)) if (a == b) => unify(c.tail)
-      //   ... To complete ...
-      case (a @ TypeVar(v), b) if (!tv(b).exists(_ == v)) =>
+      case (a, b) if (a == b) => unify(c.tail)
+      case (a @ TypeVar(v), b) if (!tv(b).exists(_.name.equals(v))) =>
         val sub = emptySubst.extend(a, b);
         unify(c.tail.map(p => (sub(p._1), sub(p._2)))).compose(sub)
-      case (a, b @ TypeVar(v)) if (!tv(a).exists(_ == v)) =>
+      case (a, b @ TypeVar(v)) if (!tv(a).exists(_.name.equals(v))) =>
         val sub = emptySubst.extend(b, a);
         unify(c.tail.map(p => (sub(p._1), sub(p._2)))).compose(sub)
       case (TypeFun(l1, l2), TypeFun(r1, r2)) => unify( (l2, r2)::(l1, r1):: c.tail) 
@@ -82,8 +94,8 @@ class TwoPhaseInferencer extends TypeInferencers {
         throw TypeError("Could not unify: " + t1 + " with " + t2)
     }
   
-  def tv(tp: Type): List[String] = tp match {
-    case TypeVar(a) => List(a)
+  def tv(tp: Type): List[TypeVar] = tp match {
+    case a @ TypeVar(_) => List(a)
     case TypeFun(a, b) => tv(a) ::: tv(b)
     case _ => Nil
   }

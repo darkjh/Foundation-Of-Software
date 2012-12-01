@@ -2,6 +2,7 @@ package fos
 
 import scala.collection.immutable.{ Set, ListSet }
 import com.sun.org.apache.xerces.internal.impl.xs.SubstitutionGroupHandler
+import scala.collection.mutable.HashMap
 
 abstract class Type {
   override def toString() = this match {
@@ -13,31 +14,46 @@ abstract class Type {
 }
 
 case class TypeVar(name: String) extends Type
-
-//   ... To complete ... 
 case class TypeFun(t1: Type, t2: Type) extends Type
 case object TypeNat extends Type
 case object TypeBool extends Type
 
 /** Type Schemes are not types. */
 case class TypeScheme(args: List[TypeVar], tp: Type) {
-  //   ... To complete ... 
+  def instantiate(): Type = {
+    var subst: Substitution = emptySubst
+    for (a <- args) subst = subst.extend(a, TypeVar(Type.freshTypeName(a.name)))
+    subst(tp)
+  }
   override def toString() = args.mkString("[", ", ", "].") + tp
-}
+} 
 
 // type related static methods
 object Type {
-  var index = 0
-  def freshTypeName: String ={index = index +1; "a" + index }
+  val index: HashMap[String, Int] = new HashMap()
+  var baseIndex = 64.toChar
+  
+  def freshTypeName(base: String): String = {
+    if (!index.contains(base)) {
+      index += ((base, 0))
+      base + 0
+    } else {
+      val i = index(base) + 1
+      index.update(base, i)
+      base + i
+    }
+  }
+  
+  def freshTypeBase(): String = {
+    baseIndex = (baseIndex.toInt + 1).toChar
+    baseIndex.toString
+  }
 }
-
 
 abstract class Substitution extends (Type => Type) { 
   subst => 
   
   var indent = 0
-
-  //   ... To complete ...
   def apply(tp: Type): Type = {
     //println("  " * indent + "in: " + tp + "   subst: " + this)
     indent = indent + 1
@@ -60,7 +76,6 @@ abstract class Substitution extends (Type => Type) {
   def apply(env: List[(String, TypeScheme)]): List[(String, TypeScheme)] =
     env map { (pair) => (pair._1, TypeScheme(pair._2.args, apply(pair._2.tp))) }
 
-  //   ... To complete ... 
   def lookup(t: TypeVar): Type
 
   def extend(tv: TypeVar, y: Type) = new Substitution {

@@ -26,8 +26,8 @@ object TypeTest {
       case (t1, t2) =>
         throw TypeError("Could not unify: " + t1 + " with " + t2)
     }
-
-  def main(args: Array[String]) {
+  
+  def inferWithoutLet {
     val subst1 = emptySubst.extend(TypeVar("y"), TypeBool).extend(TypeVar("x"), TypeVar("y"))
     val subst2 = emptySubst.extend(TypeVar("y"), TypeNat)
     val subst3 = emptySubst.extend(TypeVar("y"), TypeVar("x")).extend(TypeVar("x"), TypeNat)
@@ -40,5 +40,16 @@ object TypeTest {
       (TypeVar("a3"), TypeVar("a5")))
     val sub = unify(c)
     println("result = " + sub(TypeVar("a0")))
+  }
+  
+  def instantiateTest() {
+    val ts = TypeScheme(List(TypeVar("a"), TypeVar("H")), TypeFun(TypeVar("a"), TypeVar("H")))
+    val ts1 = TypeScheme(List(TypeVar("a"), TypeVar("H")), TypeFun(TypeVar("a"), TypeVar("H")))
+    
+    ts.instantiate
+    println(ts1.instantiate)
+  }
+
+  def main(args: Array[String]) {
   }
 }
