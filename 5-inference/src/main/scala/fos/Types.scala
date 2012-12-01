@@ -27,24 +27,8 @@ case class TypeScheme(args: List[TypeVar], tp: Type) {
 
 // type related static methods
 object Type {
-  var used: List[Int] = List()
-  
-  def freshTypeName: String = 
-    if (used.isEmpty) {
-      used = 0 :: used
-      "a" + 0
-    } else {
-      val freshIndex = used.head + 1
-      used = freshIndex :: used
-      "a" + freshIndex
-    }
-  
-  def tree2type(tr: TypeTree): Type = tr match {
-    case NatType => TypeNat
-    case BoolType => TypeBool
-    case FunType(a, b) => TypeFun(tree2type(a), tree2type(b))
-  }
-		  
+  var index = 0
+  def freshTypeName: String ={index = index +1; "a" + index }
 }
 
 

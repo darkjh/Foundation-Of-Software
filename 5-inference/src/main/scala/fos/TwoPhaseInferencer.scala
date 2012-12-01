@@ -51,8 +51,8 @@ class TwoPhaseInferencer extends TypeInferencers {
           TypingResult(TypeFun(fresh, sub.tpe), sub.c)
         }
         case tt => {
-          val sub = collect((v, tree2type(tt)) :: env, t)
-          TypingResult(TypeFun(tree2type(tt), sub.tpe), sub.c)
+          val sub = collect((v, toType(tt)) :: env, t)
+          TypingResult(TypeFun(toType(tt), sub.tpe), sub.c)
         }
       }
     }
