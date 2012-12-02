@@ -86,9 +86,9 @@ object Infer extends StandardTokenParsers {
 //    val input = "\\f. \\x. f (f x)"
       val input = """
         let double = \f.\a. f (f a) in
-        let a = double (\x: Nat. succ (succ x)) 1 in
-        let b = double (\x: Bool. x) false in
-        b
+        let a = double (\x. succ (succ x)) 1 in
+        let b = double (\x. x) false in
+        a
         """
     val tokens = new lexical.Scanner(input)
     phrase(Term)(tokens) match {

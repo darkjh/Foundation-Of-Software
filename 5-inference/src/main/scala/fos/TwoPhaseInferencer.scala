@@ -68,12 +68,13 @@ class TwoPhaseInferencer extends TypeInferencers {
     
     case Let(x, v, t) => {
       val tr_v = collect(env, v)
-      val pt_v = unify(tr_v.c)(tr_v.tpe)
-      val tvNotInEnv = tv(pt_v) filter ((v: TypeVar) => lookup(env, v.name) == null)
+      val subst = unify(tr_v.c)
+      val pt_v = subst(tr_v.tpe)
+      val newEnv = subst(env)
+      val tvNotInEnv = tv(pt_v) filter ((v: TypeVar) => lookup(newEnv, v.name) == null)
       val ts_v = TypeScheme(tvNotInEnv, pt_v)
       
-      val tr_t = collect((x, ts_v) :: env, t)
-      TypingResult(tr_t.tpe, tr_t.c)
+      collect((x, ts_v) :: newEnv, t)
     }
   }
 
