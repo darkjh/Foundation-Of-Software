@@ -23,18 +23,31 @@ case object TypeBool extends Type
 case class TypeScheme(args: List[TypeVar], tp: Type) {
   //   ... To complete ... 
   override def toString() = args.mkString("[", ", ", "].") + tp
+
+  var countMap = args map (p => p.name) zip (args map (p => 0)) toMap
+
+  def instantiate: Type = tp match {
+    case tvar @ TypeVar(str) =>
+      if (args.exists(_.name.equals(str))) {
+        val currentVal = countMap(str)
+        countMap = countMap.updated(str, currentVal + 1)
+        TypeVar(str.toUpperCase + currentVal)
+      } else
+        tp
+    case TypeFun(a, b) => TypeFun(TypeScheme(args, a).instantiate, TypeScheme(args, b).instantiate)
+    case t => t
+  }
 }
 
 // type related static methods
 object Type {
   var index = 0
-  def freshTypeName: String ={index = index +1; "a" + index }
+  def freshTypeName: String = { index = index + 1; "a" + index }
 }
 
+abstract class Substitution extends (Type => Type) {
+  subst =>
 
-abstract class Substitution extends (Type => Type) { 
-  subst => 
-  
   var indent = 0
 
   //   ... To complete ...
@@ -69,11 +82,11 @@ abstract class Substitution extends (Type => Type) {
       else subst.lookup(t)
     }
   }
-  
+
   def compose(that: Substitution): Substitution = new Substitution {
-	  override def apply(tp: Type) = subst(that(tp))
-	  def lookup(t: TypeVar): Type = throw new RuntimeException()
-  }  
+    override def apply(tp: Type) = subst(that(tp))
+    def lookup(t: TypeVar): Type = throw new RuntimeException()
+  }
 }
 
 /** The empty substitution. */
