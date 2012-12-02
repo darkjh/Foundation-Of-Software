@@ -29,7 +29,7 @@ class TwoPhaseInferencer extends TypeInferencers {
     }
     case IsZero(tm) => collect(env, tm) match {
       case TypingResult(tp, cons) => TypingResult(TypeBool, (tp, TypeNat) :: cons)
-      case _ => throw TypeError("Bool expected")
+      case _ => throw TypeError("Nat expected")
     }
     case If(c, t, e) => {
       val tc = collect(env, c)
@@ -50,6 +50,10 @@ class TwoPhaseInferencer extends TypeInferencers {
           val freshTypeScheme = TypeScheme(Nil, fresh)
           val sub = collect((v, freshTypeScheme) :: env, t)
           TypingResult(TypeFun(freshTypeScheme.instantiate, sub.tpe), sub.c)
+          //          val newTypeVar = TypeVar(freshTypeBase)
+          //          val ts = TypeScheme(Nil, newTypeVar)
+          //          val sub = collect((v, ts) :: env, t)
+          //          TypingResult(TypeFun(newTypeVar, sub.tpe), sub.c)
         }
         case tt => {
           val ttTypeScheme = TypeScheme(Nil, toType(tt))
@@ -61,6 +65,7 @@ class TwoPhaseInferencer extends TypeInferencers {
     case App(t1, t2) => {
       val sub1 = collect(env, t1)
       val sub2 = collect(env, t2)
+//      val fresh = TypeVar(freshTypeBase)
       val fresh = TypeVar(freshTypeName)
       TypingResult(fresh, (sub1.tpe, TypeFun(sub2.tpe, fresh)) :: sub1.c ++ sub2.c)
     }
@@ -69,11 +74,11 @@ class TwoPhaseInferencer extends TypeInferencers {
       val s = unify(c)
       val t1 = s(tp)
       val envNewTemp = s(env)
-      val typeVar = for {
-        t <- tv(t1) if env forall (p => !p._2.args.exists(_.name.equals(t.name)))
+      val tvNotInEnv = for {
+        t <- tv(t1) if envNewTemp forall (p => !tv(p._2.tp).exists(_.name.equals(t.name)))
       } yield t
-      val ts = TypeScheme(typeVar, t1)
-      val envNew = (x, ts) :: env
+      val ts = TypeScheme(tvNotInEnv, t1)
+      val envNew = (x, ts) :: envNewTemp
       collect(envNew, t)
     }
   }
@@ -86,11 +91,10 @@ class TwoPhaseInferencer extends TypeInferencers {
       case (TypeNat, TypeNat) => unify(c.tail)
       case (TypeBool, TypeBool) => unify(c.tail)
       case (TypeVar(a), TypeVar(b)) if (a == b) => unify(c.tail)
-      //   ... To complete ...
-      case (a: TypeVar, b) if (!tv(b).exists(_.name == a.name)) =>
+      case (a @ TypeVar(v), b) if (!tv(b).exists(_.name.equals(v))) =>
         val sub = emptySubst.extend(a, b);
         unify(c.tail.map(p => (sub(p._1), sub(p._2)))).compose(sub)
-      case (a, b @ TypeVar(v)) if (!tv(a).exists(_ == v)) =>
+      case (a, b @ TypeVar(v)) if (!tv(a).exists(_.name.equals(v))) =>
         val sub = emptySubst.extend(b, a);
         unify(c.tail.map(p => (sub(p._1), sub(p._2)))).compose(sub)
       case (TypeFun(l1, l2), TypeFun(r1, r2)) => unify((l2, r2) :: (l1, r1) :: c.tail)
@@ -105,7 +109,7 @@ class TwoPhaseInferencer extends TypeInferencers {
   }
 
   override def typeOf(t: Term): Type = try {
-    
+
     val TypingResult(tp, c) = collect(Nil: Env, t)
     val s = unify(c)
     s(tp)

@@ -4,7 +4,7 @@ abstract class TypeInferencers {
   import Type._
 
   type Env = List[(String, TypeScheme)]
-  //type Env = List[(String, Type)]
+
 
   case class TypeError(msg: String) extends Exception(msg)
 
@@ -13,10 +13,6 @@ abstract class TypeInferencers {
     case Nil => null
     case (n, tp) :: env1 => if (n == name) tp else lookup(env1, name)
   }
-//  def lookup(env: Env, name: String): Type = env match {
-//    case Nil => null
-//    case (n, tp) :: env1 => if (n == name) tp else lookup(env1, name)
-//  }
   
   /** Turn a syntactic type (given explicitly) into a proper type. */
   def toType(s: TypeTree): Type = s match {
