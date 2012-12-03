@@ -46,14 +46,14 @@ class TwoPhaseInferencer extends TypeInferencers {
     case Abs(v, tp, t) => {
       tp match {
         case EmptyType => {
-          val fresh = TypeVar(freshTypeName)
-          val freshTypeScheme = TypeScheme(Nil, fresh)
-          val sub = collect((v, freshTypeScheme) :: env, t)
-          TypingResult(TypeFun(freshTypeScheme.instantiate, sub.tpe), sub.c)
-          //          val newTypeVar = TypeVar(freshTypeBase)
-          //          val ts = TypeScheme(Nil, newTypeVar)
-          //          val sub = collect((v, ts) :: env, t)
-          //          TypingResult(TypeFun(newTypeVar, sub.tpe), sub.c)
+          //          val fresh = TypeVar(freshTypeName)
+          //          val freshTypeScheme = TypeScheme(Nil, fresh)
+          //          val sub = collect((v, freshTypeScheme) :: env, t)
+          //          TypingResult(TypeFun(freshTypeScheme.instantiate, sub.tpe), sub.c)
+          val newTypeVar = TypeVar(freshTypeBase)
+          val ts = TypeScheme(Nil, newTypeVar)
+          val sub = collect((v, ts) :: env, t)
+          TypingResult(TypeFun(newTypeVar, sub.tpe), sub.c)
         }
         case tt => {
           val ttTypeScheme = TypeScheme(Nil, toType(tt))
@@ -65,8 +65,8 @@ class TwoPhaseInferencer extends TypeInferencers {
     case App(t1, t2) => {
       val sub1 = collect(env, t1)
       val sub2 = collect(env, t2)
-//      val fresh = TypeVar(freshTypeBase)
-      val fresh = TypeVar(freshTypeName)
+      val fresh = TypeVar(freshTypeBase)
+      //      val fresh = TypeVar(freshTypeName)
       TypingResult(fresh, (sub1.tpe, TypeFun(sub2.tpe, fresh)) :: sub1.c ++ sub2.c)
     }
     case Let(x, v, t) => {
