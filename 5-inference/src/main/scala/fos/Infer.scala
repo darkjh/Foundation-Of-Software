@@ -83,7 +83,7 @@ object Infer extends StandardTokenParsers {
   def main(args: Array[String]) {
     val tokens = new lexical.Scanner(StreamReader(new java.io.InputStreamReader(System.in)))
     //    val input = "\\x. iszero x"
-    //    val input = "\\f. \\x. f (f x)"
+//        val input = "\\f. \\x. f (f x)"
     //          val input = """
     //            let double = \f.\a. f (f a) in
     //        		  let a = double (\x: Nat. succ (succ x)) 1 in
@@ -92,7 +92,7 @@ object Infer extends StandardTokenParsers {
     //            """
 
     //    val input = "(\\f. \\x. let g=f in g(0)) (\\x:Bool. if x then true else false) true"
-    //    val tokens = new lexical.Scanner(input)
+//        val tokens = new lexical.Scanner(input)
     phrase(Term)(tokens) match {
       case Success(trees, _) =>
         try {
