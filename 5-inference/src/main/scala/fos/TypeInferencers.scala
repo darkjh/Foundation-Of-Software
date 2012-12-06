@@ -5,6 +5,7 @@ abstract class TypeInferencers {
 
   type Env = List[(String, TypeScheme)]
 
+
   case class TypeError(msg: String) extends Exception(msg)
 
   /** Lookup variable <code>n gname</code> in the given environment. */

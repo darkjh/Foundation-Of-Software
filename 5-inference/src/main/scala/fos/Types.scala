@@ -20,16 +20,35 @@ case object TypeBool extends Type
 
 /** Type Schemes are not types. */
 case class TypeScheme(args: List[TypeVar], tp: Type) {
+  override def toString() = args.mkString("[", ", ", "].") + tp
+  
   def instantiate(): Type = {
     var subst: Substitution = emptySubst
     for (a <- args) subst = subst.extend(a, TypeVar(Type.freshTypeName(a.name)))
     subst(tp)
   }
-  override def toString() = args.mkString("[", ", ", "].") + tp
-} 
+//  var countMap = args map (p => p.name) zip (args map (p => 0)) toMap
+//  
+//  def instantiate: Type = tp match {
+//    case tvar @ TypeVar(str) =>
+//      if (args.exists(_.name.equals(str))) {
+//        val currentVal = countMap(str)
+//        countMap = countMap.updated(str, currentVal + 1)
+//        TypeVar(str.toUpperCase + currentVal)
+//      } else {
+//        tp
+//      }
+//    case TypeFun(a, b) => TypeFun(TypeScheme(args, a).instantiate, TypeScheme(args, b).instantiate)
+//    case t => t
+//  }
+}
 
 // type related static methods
 object Type {
+  
+//  var index = 0
+//  def freshTypeName: String = { index = index + 1; "a" + index }
+  
   val index: HashMap[String, Int] = new HashMap()
   var baseIndex = 64.toChar
   
@@ -84,11 +103,11 @@ abstract class Substitution extends (Type => Type) {
       else subst.lookup(t)
     }
   }
-  
+
   def compose(that: Substitution): Substitution = new Substitution {
-	  override def apply(tp: Type) = subst(that(tp))
-	  def lookup(t: TypeVar): Type = throw new RuntimeException()
-  }  
+    override def apply(tp: Type) = subst(that(tp))
+    def lookup(t: TypeVar): Type = throw new RuntimeException()
+  }
 }
 
 /** The empty substitution. */
