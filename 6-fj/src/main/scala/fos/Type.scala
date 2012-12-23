@@ -149,7 +149,7 @@ object Evaluate extends (Expr => Expr) {
         val clsdef = getClassDef(cls)
         clsdef.findField(fd) match {
           case None => throw new EvaluationException("Field not found")
-          case Some(field) => fds(clsdef.fields.indexOf(field))
+          case Some(field) => fds((clsdef.getFieldsSuperclass ::: clsdef.fields).indexOf(field))
         }
       // R-INVK
       case Apply(newClass @ New(cls, fds), mtd, args) =>
@@ -163,7 +163,7 @@ object Evaluate extends (Expr => Expr) {
       // Congruence rules
 
       // RC-FIELD
-      case Select(e, f) => Select(Evaluate(e), f)
+      case Select(e, f) if !isValue(e) => Select(Evaluate(e), f)
       // RC-INVK-RECV
       case Apply(e, mtd, args) if !isValue(e) => Apply(Evaluate(e), mtd, args)
       // RC-INVK-ARG
@@ -173,7 +173,7 @@ object Evaluate extends (Expr => Expr) {
       case New(cls, args) if !args.forall(isValue(_)) =>
         New(cls, args map { case exp => if (isValue(exp)) exp else Evaluate(exp) })
       // RC-CAST
-      case Cast(cls, e) => Cast(cls, Evaluate(e))
+      case Cast(cls, e) if !isValue(e) => Cast(cls, Evaluate(e))
 
       // No rules (Value)
       case _ => throw new NoRuleApplies(expr)

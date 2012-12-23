@@ -233,7 +233,7 @@ object FJ extends StandardTokenParsers {
     		}
     	}
       
-        new Pairs(new A(), new B()).setfst(new A())
+        (Pair) new Pairs(new A(), new Pair(new A(), new B()).snd)
       """
     // new Pair(new A(), new B()).snd
     // new Pair(new A(), new B()).setfst(new B())
