@@ -228,7 +228,7 @@ object FJ extends StandardTokenParsers {
     			super(fst, snd);
     		}
       
-    		Pairs setfst(Object newfst) {
+    		Pair setfst(Object newfst) {
     			return new Pairs(this.snd, newfst);
     		}
     	}
