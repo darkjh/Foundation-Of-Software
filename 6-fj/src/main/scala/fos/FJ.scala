@@ -216,14 +216,24 @@ object FJ extends StandardTokenParsers {
     		Object fst;
     		Object snd;
     		Pair(Object fst, Object snd) {
-    			super(); this.fst = fst; this.snd = sn;
+    			super(); this.fst = fst; this.snd = snd;
     		}
     		Pair setfst(Object newfst) {
     			return new Pair(newfst, this.snd);
     		}
     	}
       
-        new Pair(new A(), new B()).setfst(new B())
+        class Pairs extends Pair {
+    		Pairs(Object fst, Object snd) {
+    			super(fst, snd);
+    		}
+      
+    		Pairs setfst(Object newfst) {
+    			return new Pairs(this.snd, newfst);
+    		}
+    	}
+      
+        new Pairs(new A(), new B()).setfst(new A())
       """
     // new Pair(new A(), new B()).snd
     // new Pair(new A(), new B()).setfst(new B())
