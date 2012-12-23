@@ -170,10 +170,12 @@ object FJ extends StandardTokenParsers {
     t match {
       case Program(cls, expr) =>
         try {
-          //cls foreach (cl => typeOf(cl, Nil))
-          //val typeExpr = typeOf(expr,Nil)
-          //println("TYPE EXPR: "+typeExpr);expr
-          reduceToValue(expr)
+          cls foreach (cl => typeOf(cl, Nil))
+          val typeExpr = typeOf(expr,Nil)
+          println("TYPE EXPR: "+typeExpr);
+          val exp = reduceToValue(expr)
+          println("EVALUATE TO: " + exp)
+          exp
         } catch {
           case TypeError(msg) =>
             println("Type Error: " + msg)
@@ -232,7 +234,7 @@ object FJ extends StandardTokenParsers {
     phrase(Prog)(tokens) match {
       case Success(trees, _) =>
         try {
-          print("EVALUATE TO: " + eval(trees))
+          eval(trees)
         } catch {
           case tperror => println(tperror.toString)
         }

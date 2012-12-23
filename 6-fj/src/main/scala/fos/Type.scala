@@ -105,7 +105,6 @@ object Type {
       }
       name
     }
-    
     case _ => throw new TypeError("unknown structure")
   }
 }
