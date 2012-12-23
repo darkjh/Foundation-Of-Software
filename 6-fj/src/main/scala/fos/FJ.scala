@@ -189,15 +189,25 @@ object FJ extends StandardTokenParsers   {
   import java.io._
 
   def main(args: Array[String]): Unit = {
-    val inputStream = if (args.length > 0) new FileInputStream(args(0)) else System.in
-    val tokens = new lexical.Scanner(StreamReader(new InputStreamReader(inputStream)))
+    // val inputStream = if (args.length > 0) new FileInputStream(args(0)) else System.in
+    // val tokens = new lexical.Scanner(StreamReader(new InputStreamReader(inputStream)))
+    
+    val input = """
+      class A extends Object { A() { super();}}
+      class B extends Object {
+        A a;
+        B(A aa) { super(); this.a = aa;}
+      }
+      """
+    val tokens = new lexical.Scanner(input)
+    
     phrase(Prog)(tokens) match {
-      case Success(trees, _) =>
-        try {
-          print(eval(trees))
-        } catch {
-          case tperror => println(tperror.toString)
-        }
+//      case Success(trees, _) =>
+//        try {
+//          print(eval(trees))
+//        } catch {
+//          case tperror => println(tperror.toString)
+//        }
       case e =>
         println(e)
     }
