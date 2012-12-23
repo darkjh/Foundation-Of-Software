@@ -177,8 +177,8 @@ object FJ extends StandardTokenParsers {
           println("EVALUATE TO: " + exp)
           exp
         } catch {
-          case TypeError(msg) =>
-            println("Type Error: " + msg)
+          case err @ TypeError(_, msg) =>
+            println(err)
             print("The expression will not be evaluated. Expr: " + expr)
             CT.clear
             expr
@@ -216,7 +216,7 @@ object FJ extends StandardTokenParsers {
     		Object fst;
     		Object snd;
     		Pair(Object fst, Object snd) {
-    			super(); this.fst = fst; this.snd = sn;
+    			super(); this.fst = fst; this.snd = snd;
     		}
     		Pair setfst(Object newfst) {
     			return new Pair(newfst, this.snd);

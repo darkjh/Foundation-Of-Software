@@ -1,8 +1,12 @@
 package fos
 
 import scala.collection.mutable.{ Map, HashMap };
+import scala.util.parsing.input.Position
 
-case class TypeError(msg: String) extends Exception(msg)
+case class TypeError(pos: Position, msg: String) extends Exception(msg) {
+  override def toString =
+      "Type Error: " + msg + "\n" + pos.longString
+}
 
 object Type {
 
@@ -15,7 +19,7 @@ object Type {
   def typeOf(tree: Tree, ctx: Context): Class = tree match {
     /* T - Var */
     case vv @ Var(name) => ctx find (_._2 == name) match {
-      case None => throw new TypeError("variable definition not found, at " + vv.pos)
+      case None => throw new TypeError(tree.pos, "variable definition not found")
       case Some(v) => v._1 
     }
     
@@ -23,10 +27,10 @@ object Type {
     case ss @ Select(obj, field) => typeOf(obj, ctx) match {
       case c: Class => 
         getClassDef(c).findField(field) match {
-          case None => throw new TypeError("class field not found, at " + ss.pos)
+          case None => throw new TypeError(tree.pos, "class field not found")
           case Some(v) => v.tpe
         }
-      case _ => throw new TypeError("")
+      case _ => throw new TypeError(tree.pos, "")
     }
     
     /* T - Invk */
@@ -34,16 +38,16 @@ object Type {
       case c: Class => 
         val argsType = args map (typeOf(_, ctx))
         val m = getClassDef(c).findMethod(method) match {
-          case None => throw new TypeError("method not defined, at " + aa.pos)
+          case None => throw new TypeError(tree.pos, "method not defined")
           case Some(v) => v
         }
         try {
           m.checkTypeArguments(argsType)
         } catch {
-          case MethodArgsException(msg) => throw new TypeError(msg + ", at " + aa.pos)
+          case MethodArgsException(msg) => throw new TypeError(tree.pos, msg)
         }
         m.tpe
-      case _ => throw new TypeError("")
+      case _ => throw new TypeError(tree.pos, "")
     }
     
     /* T - New */
@@ -53,7 +57,7 @@ object Type {
       try {
     	classdef.checkTypeArguments(argsType)
       } catch {
-        case ClassConstructorArgsException(msg) => throw new TypeError(msg + ", at " + nn.pos)
+        case ClassConstructorArgsException(msg) => throw new TypeError(tree.pos, msg)
       }
       classdef.name
     }
@@ -66,10 +70,10 @@ object Type {
         if (fromClass.isSubClassOf(toClass)) toClass.name
         else if (toClass.isSubClassOf(fromClass) && !toClass.name.equals(fromClass.name)) toClass.name 
         else { // stupid cast
-          System.err.println("stupid cast found, at " + cc.pos)
+          System.err.println("stupid cast found\n" + tree.pos.longString)
           toClass.name
         }
-      case _ => throw new TypeError("")
+      case _ => throw new TypeError(tree.pos, "")
     }
     
     /* Class Typing */
@@ -78,45 +82,53 @@ object Type {
         cc.checkFields
         cc.verifyConstructorArgs
       } catch {
-        case FieldAlreadyDefined(msg) => throw new TypeError(msg + ", at " + cc.pos)
-        case ClassConstructorArgsException(msg) => throw new TypeError(msg + ", at " + cc.pos)
+        case FieldAlreadyDefined(msg) => throw new TypeError(tree.pos, msg)
+        case ClassConstructorArgsException(msg) => throw new TypeError(tree.pos, msg)
       }
       
       val superParams = ctor.supers map (_.name)
       val superFields = getClassDef(scls).fields map (_.name)
       val localFields = fields map (_.name)
       
+      // syntax errors, should be handled in parser
+      if (!name.equals(ctor.name))
+        throw new TypeError(tree.pos, "ctor name mismatch")
+      if (!(ctor.body map (_.obj) forall (_.equals("this"))))
+        throw new TypeError(tree.pos, "this expected")
+      
       // super class fields should be all init
       if (superParams.length != superFields.length)
-        throw new TypeError("super class fields are not properly initialized, at " + cc.pos)
+        throw new TypeError(tree.pos, "super class fields are not properly initialized")
       else if (!((superParams zip superFields) forall (p => p._1.equals(p._2))))
-        throw new TypeError("super class fields are not properly initialized, at " + cc.pos)
+        throw new TypeError(tree.pos, "super class fields are not properly initialized")
       
       // local fields should be all init
       if (ctor.body.length != localFields.length)
-        throw new TypeError("class fields are not properly initialized, at " + cc.pos)
+        throw new TypeError(tree.pos, "class fields are not properly initialized")
       else if (!((ctor.body zip localFields) forall (p => p._1.field.equals(p._2))))
-        throw new TypeError("class fields are not properly initialized, at " + cc.pos)
+        throw new TypeError(tree.pos, "class fields are not properly initialized")
       
       // rhs should be typeble
       val ctorCtx = (ctor.args map (_.tpe)) zip (ctor.args map (_.name)) 
       (ctor.body map (_.rhs)) map (typeOf(_, ctorCtx))
-      
-//      // rhs should have the same name wrt class fields
-//      if (!(((ctor.args map (_.name)) zip (fields map (_.name))) forall (p => p._1.equals(p._2))))
-//        throw new TypeError("ctor parameters inconsistant with class fields, at " + cc.pos)
-      
+            
       /* Method Typing */
       for (m <- methods) {
         val localCtx = (name, "this") :: ((m.args map (_.tpe)) zip (m.args map (_.name)))
         val clsMethod = typeOf(m.body, localCtx)
         getClassDef(clsMethod).isSubClassOf(m.tpe)
         
-        cc.overrideMethod(m.tpe, m.name, m.args, m.body)
+        // check override methods, if any
+        try {
+          cc.overrideMethod(m.tpe, m.name, m.args, m.body)
+        } catch {
+          case MethodOverrideException(msg) => 
+            throw new TypeError(tree.pos, msg)
+        }
       }
       name
     }
-    case _ => throw new TypeError("unknown structure")
+    case _ => throw new TypeError(tree.pos, "unknown structure")
   }
 }
 
@@ -216,7 +228,7 @@ object CT {
 object Utils {
 
   def getClassDef(className: String): ClassDef = CT lookup className match {
-    case None => throw new TypeError("class " + className + " not declared")
+    case None => throw new Exception("class " + className + " not declared")
     case Some(c: ClassDef) => c
   }
 }
