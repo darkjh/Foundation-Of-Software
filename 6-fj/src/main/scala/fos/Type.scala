@@ -85,15 +85,26 @@ object Type {
       val superParams = ctor.supers map (_.name)
       val superFields = getClassDef(scls).fields map (_.name)
       val localFields = fields map (_.name)
+      
+      // super class fields should be all init
       if (superParams.length != superFields.length)
         throw new TypeError("super class fields are not properly initialized, at " + cc.pos)
       else if (!((superParams zip superFields) forall (p => p._1.equals(p._2))))
         throw new TypeError("super class fields are not properly initialized, at " + cc.pos)
       
+      // local fields should be all init
       if (ctor.body.length != localFields.length)
         throw new TypeError("class fields are not properly initialized, at " + cc.pos)
       else if (!((ctor.body zip localFields) forall (p => p._1.field.equals(p._2))))
         throw new TypeError("class fields are not properly initialized, at " + cc.pos)
+      
+      // rhs should be typeble
+      val ctorCtx = (ctor.args map (_.tpe)) zip (ctor.args map (_.name)) 
+      (ctor.body map (_.rhs)) map (typeOf(_, ctorCtx))
+      
+//      // rhs should have the same name wrt class fields
+//      if (!(((ctor.args map (_.name)) zip (fields map (_.name))) forall (p => p._1.equals(p._2))))
+//        throw new TypeError("ctor parameters inconsistant with class fields, at " + cc.pos)
       
       /* Method Typing */
       for (m <- methods) {
