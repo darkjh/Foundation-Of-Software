@@ -93,6 +93,7 @@ object Infer extends StandardTokenParsers {
 
     //    val input = "(\\f. \\x. let g=f in g(0)) (\\x:Bool. if x then true else false) true"
 //        val tokens = new lexical.Scanner(input)
+
     phrase(Term)(tokens) match {
       case Success(trees, _) =>
         try {
